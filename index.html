@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheapanel – Panels, mod menus and diamonds</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--card:#0d0d0d;--line:#262626;--text:#f2f2f2;--mute:#9a9a9a;--acc:#ff4d1a;--acc2:#ffb703;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Rajdhani','Segoe UI',Arial,sans-serif;font-size:18px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Anton','Impact',sans-serif;font-weight:400;letter-spacing:.01em;line-height:1.05;margin:0}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-family:'Anton',Impact,sans-serif;font-size:26px}
+.logo b{color:var(--acc);font-weight:400}
+.nav-links{display:flex;gap:22px;align-items:center;font-weight:600}
+.nav-links a:hover{color:var(--acc)}
+.btn{display:inline-block;background:var(--acc);color:#000;font-weight:700;padding:12px 24px;border-radius:4px;border:0;cursor:pointer;font:inherit;font-weight:700;transition:background .15s}
+.btn:hover{background:var(--acc2)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc)}
+.hero{padding:70px 0 60px;border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(48px,11vw,124px);max-width:11ch}
+.hero h1 span{display:block;color:var(--acc)}
+.hero p{max-width:46ch;color:var(--mute);font-size:21px;margin:22px 0 30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.games{display:flex;gap:10px;margin-top:40px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);padding:6px 14px;border-radius:99px;font-weight:600;color:var(--mute)}
+section{padding:64px 0;border-bottom:1px solid var(--line)}
+section>.wrap>h2{font-size:clamp(34px,6vw,56px);margin-bottom:8px}
+.sub{color:var(--mute);margin:0 0 32px;max-width:52ch}
+.tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.tab{background:none;border:1px solid var(--line);color:var(--text);padding:8px 18px;border-radius:4px;font:inherit;font-weight:700;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:#000}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.card:hover{border-color:var(--acc)}
+.card h3{font-size:26px}
+.card .game{color:var(--acc);font-weight:700}
+.card ul{margin:0;padding-left:18px;color:var(--mute);flex:1}
+.price{font-family:'Anton',Impact,sans-serif;font-size:34px}
+.price small{font-family:'Rajdhani',sans-serif;font-size:16px;color:var(--mute)}
+.bonus{display:inline-block;align-self:flex-start;background:#1a1204;border:1px solid var(--acc2);color:var(--acc2);font-weight:700;padding:2px 10px;border-radius:99px}
+.old{font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--mute);text-decoration:line-through;margin-right:6px}
+.save{background:var(--acc);color:#000;font-weight:700;padding:2px 8px;border-radius:4px;font-size:15px;font-family:'Rajdhani',sans-serif;vertical-align:middle;margin-left:6px}
+.dcard{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:24px;max-width:520px}
+.dl{font-weight:700}
+.stepper{display:flex;gap:8px;margin:8px 0 14px}
+.stepper button{width:56px;background:var(--bg);border:1px solid var(--line);color:var(--text);font:inherit;font-size:28px;border-radius:4px;cursor:pointer}
+.stepper button:hover{border-color:var(--acc);color:var(--acc)}
+.stepper input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:'Anton',Impact,sans-serif;font-size:32px;text-align:center;border-radius:4px;padding:8px}
+.stepper input:focus{border-color:var(--acc);outline:none}
+.qcs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.qc{background:none;border:1px solid var(--line);color:var(--mute);padding:4px 14px;border-radius:99px;font:inherit;font-weight:600;cursor:pointer}
+.qc:hover{border-color:var(--acc);color:var(--acc)}
+.dprice{margin-bottom:6px}
+.drs{color:var(--mute)}
+.dnote{min-height:26px;margin:6px 0 14px;font-weight:600}
+.ann{background:var(--acc);color:#000;text-align:center;font-weight:700;padding:8px 12px;font-size:16px}
+.btn.sm{padding:6px 14px}
+.badge{background:#000;color:var(--acc2);border-radius:99px;padding:0 8px;margin-left:4px}
+.tiles{padding:40px 0}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.tile{border:1px solid var(--line);border-radius:6px;padding:26px 22px;min-height:130px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(135deg,#1f0b04,#000)}
+.tile.pubg{background:linear-gradient(135deg,#1f1804,#000)}
+.tile.dia{background:linear-gradient(135deg,#041f1f,#000)}
+.tile:hover{border-color:var(--acc)}
+.tile b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:30px}
+.tile span{color:var(--mute)}
+.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:24px}
+.trust div{border-left:2px solid var(--acc);padding-left:12px}
+.trust b{display:block}.trust span{color:var(--mute);font-size:16px}
+.thumb{height:92px;border-radius:4px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:linear-gradient(135deg,#2a0f05,#0a0a0a);border:1px solid var(--line)}
+.thumb.pubg{background:linear-gradient(135deg,#2a2005,#0a0a0a)}
+.thumb b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:36px;color:var(--acc)}
+.thumb i{font-style:normal;font-weight:700;letter-spacing:.2em;color:var(--mute);font-size:14px}
+.btns{display:flex;gap:8px}.btns .btn{flex:1;text-align:center;padding:10px 8px}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+#ov.open{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);background:#0a0a0a;border-left:1px solid var(--line);transform:translateX(100%);transition:transform .25s;z-index:51;display:flex;flex-direction:column;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
+#drawer.open{transform:none}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+#cl{flex:1;overflow:auto}
+.ci{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ci small{display:block;color:var(--mute)}
+.rm{background:none;border:0;color:var(--mute);cursor:pointer;font-size:16px}
+.rm:hover{color:var(--acc)}
+.tot{display:flex;justify-content:space-between;font-size:22px;font-weight:700;margin:14px 0}
+.empty{color:var(--mute)}
+.fgrid{align-items:flex-start}
+.fgrid>div{display:flex;flex-direction:column;gap:4px}
+.fgrid a:hover{color:var(--acc)}
+.fgrid b{color:var(--text)}
+.fgrid .fine{flex-basis:100%;border-top:1px solid var(--line);padding-top:16px;margin-top:8px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;counter-reset:s;padding:0;list-style:none;margin:0}
+.steps li{counter-increment:s;border-top:2px solid var(--acc);padding-top:14px}
+.steps li::before{content:counter(s);font-family:'Anton',Impact,sans-serif;font-size:34px;color:var(--acc);display:block}
+.steps b{display:block;font-size:20px}
+.steps span{color:var(--mute)}
+details{border-bottom:1px solid var(--line);padding:16px 0}
+summary{cursor:pointer;font-weight:700;font-size:20px}
+details p{color:var(--mute);margin:10px 0 0;max-width:62ch}
+footer{padding:36px 0;color:var(--mute);font-size:16px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+@media(max-width:560px){.nav-links a:not(.btn){display:none}.hero{padding-top:44px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="ann">🔥 1-year plans 30% OFF · 10% OFF on 10,000+ diamonds · Fast delivery on WhatsApp</div>
+<header class="wrap">
+<nav>
+<a class="logo" href="#top">CHEA<b>PANEL</b></a>
+<div class="nav-links"><a href="#shop">Panels</a><a href="#diamonds">Diamonds</a><a href="#faq">FAQ</a><a class="btn ghost sm" href="account.html">Account</a><button class="btn sm" id="cb" type="button">Cart <span id="cc" class="badge">0</span></button></div>
+</nav>
+</header>
+
+<main id="top">
+<div class="hero"><div class="wrap">
+<h1>Headshot panels. <span>Nothing else.</span></h1>
+<p>Anti-ban panels and mod menus for Free Fire and PUBG, plus fast diamond top-ups. Low prices, quick delivery, support on WhatsApp.</p>
+<div class="cta"><a class="btn" href="#shop">Browse panels</a><a class="btn ghost" id="waTop" href="#">Chat on WhatsApp</a></div>
+<div class="games"><span class="chip">Free Fire</span><span class="chip">PUBG Mobile</span><span class="chip">Diamond top-up</span></div>
+</div></div>
+
+<section class="tiles"><div class="wrap">
+<div class="tgrid">
+<a class="tile" href="#shop"><b>Free Fire</b><span>Aimbot panels</span></a>
+<a class="tile pubg" href="#shop"><b>PUBG Mobile</b><span>Aimbot panels</span></a>
+<a class="tile dia" href="#diamonds"><b>Diamonds</b><span>From 495 · $2.41</span></a>
+</div>
+<div class="trust"><div><b>Fast delivery</b><span>Minutes after payment</span></div><div><b>Auto-update</b><span>Always current builds</span></div><div><b>Anti-ban</b><span>Protection included</span></div><div><b>Support</b><span>WhatsApp chat</span></div></div>
+</div></section>
+
+<section id="shop"><div class="wrap">
+<h2>Panels</h2>
+<p class="sub">Pick a game and a plan, then order on WhatsApp. Prices are in USD.</p>
+<div class="tabs" role="tablist">
+<button class="tab" role="tab" aria-selected="true" data-cat="all">All</button>
+<button class="tab" role="tab" aria-selected="false" data-cat="ff">Free Fire</button>
+<button class="tab" role="tab" aria-selected="false" data-cat="pubg">PUBG</button>
+</div>
+<div class="grid" id="grid"></div>
+</div></section>
+
+<section id="diamonds"><div class="wrap">
+<h2>Diamonds</h2>
+<p class="sub" id="dsub">Free Fire top-up by player ID. Minimum 495 diamonds. Get 10% off on 10,000 or more.</p>
+<div class="dcard">
+<label class="dl" for="dq">Number of diamonds</label>
+<div class="stepper"><button type="button" id="dm" aria-label="Decrease by 495">−</button><input id="dq" type="number" inputmode="numeric" min="495" max="1000000" value="495"><button type="button" id="dp" aria-label="Increase by 495">+</button></div>
+<div class="qcs"><button type="button" class="qc" data-q="495">495</button><button type="button" class="qc" data-q="990">990</button><button type="button" class="qc" data-q="2475">2,475</button><button type="button" class="qc" data-q="10000">10,000</button></div>
+<div class="dprice"><div><span class="old" id="dold"></span><span class="save" id="dsave" hidden>10% OFF</span></div><div class="price" id="dusd">$2.41</div></div>
+<p class="dnote" id="dnote"></p>
+<div class="btns"><button type="button" class="btn" id="dadd">Add to cart</button><a class="btn ghost" id="dbuy" href="#">Buy now</a></div>
+</div>
+</div></section>
+
+<section id="how"><div class="wrap">
+<h2>How to buy</h2>
+<p class="sub">Three steps, usually done in a few minutes.</p>
+<ol class="steps">
+<li><b>Choose a plan</b><span>Pick a panel, mod menu or diamond pack above.</span></li>
+<li><b>Order on WhatsApp</b><span>Tap Buy. Your product is filled into the message for you.</span></li>
+<li><b>Pay and receive</b><span>Pay with your preferred method and get your files or diamonds.</span></li>
+</ol>
+</div></section>
+
+<section id="faq"><div class="wrap">
+<h2>FAQ</h2>
+<p class="sub">Quick answers before you order.</p>
+<details><summary>What do you sell?</summary><p>Headshot panels and mod menus for Free Fire and PUBG, and diamond top-ups. We don’t sell anything else.</p></details>
+<details><summary>Is there any risk of a ban?</summary><p>Our builds include anti-ban protection, but no cheat is ever risk-free. Games update often and using mods breaks their rules. Use a secondary account and play at your own risk.</p></details>
+<details><summary>How fast is delivery?</summary><p>Most orders are delivered within minutes once payment is confirmed. Diamond top-ups need your player ID.</p></details>
+<details><summary>What if something doesn’t work?</summary><p>Message us on WhatsApp with your order details and we’ll help you set it up or fix it.</p></details>
+</div></section>
+</main>
+
+<footer><div class="wrap fgrid"><div><div class="logo">CHEA<b>PANEL</b></div><span>Panels and diamonds for Free Fire and PUBG.</span></div><div><b>Shop</b><a href="#shop">Panels</a><a href="#diamonds">Diamonds</a></div><div><b>Help</b><a href="#faq">FAQ</a><a id="fwa" href="#">WhatsApp support</a></div><div class="fine">© 2026 cheapanel.store · Not affiliated with Garena, Krafton or any game publisher.</div></div></footer>
+
+<div id="ov"></div>
+<aside id="drawer" aria-label="Cart"><div class="dh"><h2 style="font-size:30px">Your cart</h2><button class="rm" id="cx" type="button" aria-label="Close cart" style="font-size:22px">✕</button></div><div id="cl"></div><div class="tot"><span>Total</span><span id="ct">$0.00</span></div><a class="btn" id="co" href="#" style="text-align:center">Checkout on WhatsApp</a><button class="btn ghost" id="cclr" type="button" style="margin-top:8px">Clear cart</button></aside>
+
+<script>
+// EDIT THESE: your WhatsApp number (country code, no + or spaces) and your products
+var WA = "919999999999";
+var PRODUCTS = [
+ {cat:"ff", game:"Free Fire", name:"Aimbot Panel – 1 Week", price:"7", per:"/ week", bonus:"+ 3 days free", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+ {cat:"ff", game:"Free Fire", name:"Aimbot Panel – 1 Month", price:"30", per:"/ month", bonus:"+ 1 week free", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+ {cat:"ff", game:"Free Fire", name:"Aimbot Panel – 1 Year", price:"255", old:"360", per:"/ year", bonus:"+ 1 month free", save:"30% OFF", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+ {cat:"pubg", game:"PUBG Mobile", name:"Aimbot Panel – 1 Week", price:"7", per:"/ week", bonus:"+ 3 days free", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+ {cat:"pubg", game:"PUBG Mobile", name:"Aimbot Panel – 1 Month", price:"30", per:"/ month", bonus:"+ 1 week free", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+ {cat:"pubg", game:"PUBG Mobile", name:"Aimbot Panel – 1 Year", price:"255", old:"360", per:"/ year", bonus:"+ 1 month free", save:"30% OFF", feats:["Aimbot only, no other hacks","Auto-update included","Anti-ban protection"]},
+
+];
+var grid=document.getElementById("grid");
+function link(t){return "https://wa.me/"+WA+"?text="+encodeURIComponent(t)}
+function render(cat){
+ grid.innerHTML="";
+ PRODUCTS.filter(function(p){return cat==="all"||p.cat===cat}).forEach(function(p){
+  var c=document.createElement("div");c.className="card";
+  var li=p.feats.map(function(f){return "<li>"+f+"</li>"}).join("");
+  var bn=p.bonus?'<span class="bonus">'+p.bonus+'</span>':'';
+  var od=p.old?'<span class="old">$'+p.old+'</span>':'';
+  var sv=p.save?'<span class="save">'+p.save+'</span>':'';
+  c.innerHTML='<div class="thumb '+p.cat+'"><b>'+(p.cat==="ff"?"FF":"PUBG")+'</b><i>AIMBOT</i></div><span class="game">'+p.game+'</span><h3>'+p.name+'</h3>'+bn+'<ul>'+li+'</ul><div class="price">'+od+'$'+p.price+' <small>'+p.per+'</small>'+sv+'</div>';
+  var a=document.createElement("a");a.className="btn ghost";a.textContent="Buy now";
+  a.href=link("Hi, I want to buy: "+p.name+" ("+p.game+") - $"+p.price+" "+p.per+(p.bonus?" "+p.bonus:""));a.target="_blank";a.rel="noopener";
+  var ad=document.createElement("button");ad.className="btn";ad.textContent="Add to cart";ad.onclick=function(){addCart(p.name+" ("+p.game+")",+p.price,p.per+(p.bonus?" "+p.bonus:""))};var bx=document.createElement("div");bx.className="btns";bx.appendChild(ad);bx.appendChild(a);c.appendChild(bx);grid.appendChild(c);
+ });
+}
+document.querySelectorAll(".tab").forEach(function(t){
+ t.addEventListener("click",function(){
+  document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-selected","false")});
+  t.setAttribute("aria-selected","true");render(t.dataset.cat);
+ });
+});
+var MINQ=495,STEP=495,RATE=700/495,PKR=290,BULK=10000,BULKP=10,dq=document.getElementById('dq');
+function fmt(n){return Math.round(n).toLocaleString('en-US')}
+function dqty(){var q=Math.floor(+dq.value);return Math.min(1000000,Math.max(MINQ,q||MINQ))}
+function dcalc(){var raw=Math.floor(+dq.value)||0,q=dqty(),full=q*RATE,off=q>=BULK,rs=off?full*(1-BULKP/100):full,usd=(rs/PKR).toFixed(2);
+document.getElementById('dusd').textContent='$'+usd;
+document.getElementById('dold').textContent=off?'$'+(full/PKR).toFixed(2):'';
+document.getElementById('dsave').hidden=!off;
+var n=document.getElementById('dnote');
+n.textContent=raw<MINQ?'Minimum order is 495 diamonds.':(off?BULKP+'% bulk discount applied.':'Add '+fmt(BULK-q)+' more diamonds to get '+BULKP+'% off.');
+n.style.color=raw<MINQ?'#ff6b6b':'#9a9a9a';
+document.getElementById('dbuy').href=link('Hi, I want '+fmt(q)+' Free Fire diamonds - $'+usd);}
+function dset(v){dq.value=Math.min(1000000,Math.max(MINQ,v));dcalc()}
+dq.addEventListener('input',dcalc);dq.addEventListener('blur',function(){dset(dqty())});
+document.getElementById('dm').onclick=function(){dset(dqty()-STEP)};
+document.getElementById('dp').onclick=function(){dset(dqty()+STEP)};
+document.querySelectorAll('.qc').forEach(function(c){c.addEventListener('click',function(){dset(+c.dataset.q)})});
+var dbuy=document.getElementById('dbuy');dbuy.target='_blank';dbuy.rel='noopener';dcalc();
+document.getElementById('dadd').onclick=function(){var q=dqty(),f=q*RATE,rs=q>=BULK?f*(1-BULKP/100):f;addCart(fmt(q)+' Free Fire diamonds',+(rs/PKR).toFixed(2),'')};
+render("all");
+var CART=[];try{CART=JSON.parse(localStorage.getItem('cp_cart')||'[]')}catch(e){}
+function persist(){try{localStorage.setItem('cp_cart',JSON.stringify(CART))}catch(e){}}
+function openCart(){document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('open')}
+function closeCart(){document.getElementById('drawer').classList.remove('open');document.getElementById('ov').classList.remove('open')}
+function addCart(n,p,x){CART.push({n:n,p:p,x:x});persist();drawCart();openCart()}
+function drawCart(){var l=document.getElementById('cl'),t=0;
+document.getElementById('cc').textContent=CART.length;
+if(!CART.length){l.innerHTML='<p class="empty">Your cart is empty.</p>'}else{l.innerHTML=CART.map(function(i,k){t+=i.p;return '<div class="ci"><div><b>'+i.n+'</b><small>'+i.x+'</small></div><div>$'+i.p.toFixed(2)+' <button class="rm" data-k="'+k+'" aria-label="Remove">✕</button></div></div>'}).join('')}
+document.getElementById('ct').textContent='$'+t.toFixed(2);
+var msg='Hi, I want to order:\n'+CART.map(function(i){return '- '+i.n+' '+i.x+' - $'+i.p.toFixed(2)}).join('\n')+'\nTotal: $'+t.toFixed(2);
+var co=document.getElementById('co');co.href=CART.length?link(msg):'#';co.target='_blank';co.rel='noopener'}
+document.getElementById('cb').onclick=openCart;document.getElementById('cx').onclick=closeCart;document.getElementById('ov').onclick=closeCart;
+document.getElementById('cclr').onclick=function(){CART=[];persist();drawCart()};
+document.addEventListener('click',function(e){var k=e.target.dataset&&e.target.dataset.k;if(k!==undefined){CART.splice(+k,1);persist();drawCart()}});
+var fw=document.getElementById('fwa');fw.href=link('Hi, I have a question about cheapanel.store');fw.target='_blank';fw.rel='noopener';
+drawCart();
+var waBtn=document.getElementById("waTop");waBtn.href=link("Hi, I have a question about cheapanel.store");waBtn.target="_blank";waBtn.rel="noopener";
+</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,getDocs,getDoc,doc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
+try{
+ const db=getFirestore(initializeApp(cfg));
+ const [ps,ss]=await Promise.all([getDocs(collection(db,"products")),getDoc(doc(db,"settings","diamonds"))]);
+ if(ss.exists()){const d=ss.data();
+  window.MINQ=d.min;window.STEP=d.step;window.BULK=d.bulkAt;window.BULKP=d.bulkPct;window.RATE=d.usd495/495*window.PKR;
+  const q=document.getElementById("dq");q.min=d.min;q.value=d.min;
+  document.getElementById("dsub").textContent="Free Fire top-up by player ID. Minimum "+d.min.toLocaleString("en-US")+" diamonds. Get "+d.bulkPct+"% off on "+d.bulkAt.toLocaleString("en-US")+" or more.";
+  dcalc();}
+ if(!ps.empty){
+  const list=ps.docs.map(x=>x.data()).filter(p=>p.active!==false).sort((a,b)=>(a.order||0)-(b.order||0));
+  PRODUCTS.length=0;
+  list.forEach(p=>PRODUCTS.push({cat:p.cat,game:p.game,name:p.name,price:String(p.price),old:p.old?String(p.old):undefined,per:p.per||"",bonus:p.bonus||undefined,save:p.save||undefined,feats:p.feats||[]}));
+  const t=document.querySelector('.tab[aria-selected="true"]');render(t?t.dataset.cat:"all");}
+}catch(e){console.warn("Using default catalog",e)}
+</script>
+</body>
+</html>
