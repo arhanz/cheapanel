@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheapanel – Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#ffffff;--card:#f6f6f6;--line:#e2e2e2;--text:#111111;--mute:#666666;--acc:#ff4d1a;--acc2:#d63a0a;--err:#dc2626;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Rajdhani','Segoe UI',Arial,sans-serif;font-size:18px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;line-height:1.05;margin:0}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-family:'Anton',Impact,sans-serif;font-size:26px}.logo b{color:var(--acc);font-weight:400}
+.btn{display:inline-block;background:var(--acc);color:#000;font:inherit;font-weight:700;padding:12px 24px;border-radius:4px;border:0;cursor:pointer}
+.btn:hover{background:var(--acc2);color:#fff}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc);background:transparent}
+.btn.sm{padding:6px 14px}
+.view{display:none}.view.on{display:block}
+.auth{max-width:420px;margin:56px auto;padding:0 20px}
+.auth h1{font-size:48px;margin-bottom:8px}
+.auth p.sub{color:var(--mute);margin:0 0 24px}
+label{display:block;font-weight:700;margin:16px 0 6px}
+input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:4px;font:inherit}
+input:focus,select:focus{border-color:var(--acc);outline:none}
+.msg{min-height:24px;margin:12px 0;color:var(--err);font-weight:600}
+.msg.ok{color:var(--ok)}
+.auth .btn{width:100%;margin-top:6px}
+.alt{text-align:center;color:var(--mute);margin-top:18px}.alt a{color:var(--acc);font-weight:700}
+.dash{padding:36px 0 60px}
+.dash h1{font-size:clamp(34px,6vw,52px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:26px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px}
+.stat span{color:var(--mute)}.stat b{display:block;font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:38px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:18px}
+.panel h2{font-size:26px;margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.row small{color:var(--mute);display:block}
+code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
+.empty{color:var(--mute)}
+.tag{font-weight:700;color:var(--acc2)}
+.inline{display:flex;gap:8px}.inline input{flex:1}.inline .btn{width:auto;margin:0}
+@media(max-width:720px){.cols{grid-template-columns:1fr}}
+.panel,.stat{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+</style>
+</head>
+<body>
+<header class="wrap"><nav>
+<a class="logo" href="#login">CHEA<b>PANEL</b></a>
+<div id="navR"><a class="btn ghost sm" href="#" id="shopLink">Back to shop</a></div>
+</nav></header>
+
+<main>
+<div class="view" id="v-login"><div class="auth">
+<h1>Log in</h1><p class="sub">Access your orders and panels.</p>
+<label for="le">Email</label><input id="le" type="email" autocomplete="email">
+<label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password">
+<div class="msg" id="lm" role="alert"></div>
+<button class="btn" id="lb">Log in</button>
+<div class="alt"><a href="#" id="fp">Forgot password?</a></div>
+<div class="alt">New here? <a href="#register">Create an account</a></div>
+</div></div>
+
+<div class="view" id="v-register"><div class="auth">
+<h1>Create account</h1><p class="sub">It takes under a minute.</p>
+<label for="rn">Username</label><input id="rn" autocomplete="username">
+<label for="re">Email</label><input id="re" type="email" autocomplete="email">
+<label for="rw">WhatsApp number</label><input id="rw" type="tel" placeholder="With country code" autocomplete="tel">
+<label for="rp">Password (min 8 characters)</label><input id="rp" type="password" autocomplete="new-password">
+<label for="rc">Confirm password</label><input id="rc" type="password" autocomplete="new-password">
+<div class="msg" id="rm" role="alert"></div>
+<button class="btn" id="rb">Create account</button>
+<div class="alt">Already have an account? <a href="#login">Log in</a></div>
+</div></div>
+
+<div class="view" id="v-dash"><div class="wrap dash">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+<div><h1 id="hi">Welcome</h1><span class="empty" id="since"></span></div>
+<button class="btn ghost" id="out">Log out</button></div>
+<div class="stats">
+<div class="stat"><span>Balance</span><b id="sBal">$0</b></div>
+<div class="stat"><span>Active panels</span><b id="sKeys">0</b></div>
+<div class="stat"><span>Orders</span><b id="sOrd">0</b></div>
+</div>
+<div class="cols">
+<div class="panel"><h2>Order diamonds</h2>
+<label for="dg" style="margin-top:0">Pack</label>
+<select id="dg"><option value="495|2.41">495 diamonds – $2.41</option><option value="990|4.83">990 diamonds – $4.83</option><option value="2475|12.07">2475 diamonds – $12.07</option><option value="10000|43.89">10,000 diamonds – $43.89 (10% off)</option></select>
+<label for="dp">Free Fire player ID</label><input id="dp" inputmode="numeric">
+<div class="msg" id="dm" role="alert"></div>
+<button class="btn" id="dbtn" style="width:100%">Place order on WhatsApp</button></div>
+<div class="panel"><h2>My panels</h2>
+<div class="inline"><input id="kin" placeholder="Enter license key" aria-label="License key"><button class="btn" id="kbtn">Redeem</button></div>
+<div class="msg" id="km" role="alert"></div>
+<div id="keys"></div></div>
+</div>
+<div class="panel"><h2>Order history</h2><div id="orders"></div></div>
+<div class="panel"><h2>Profile</h2><div id="prof"></div>
+<p style="margin:14px 0 0"><a class="btn ghost sm" id="help" href="#">Contact support</a></p></div>
+</div></div>
+</main>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,addDoc,collection,query,where,getDocs,updateDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// PASTE YOUR FIREBASE WEB CONFIG HERE (Firebase console > Project settings > Your apps)
+const firebaseConfig={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
+const WA="919999999999";
+
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const say=(id,t,ok)=>{const m=$(id);m.textContent=t;m.className="msg"+(ok?" ok":"")};
+const wa=t=>"https://wa.me/"+WA+"?text="+encodeURIComponent(t);
+const ERR={"auth/email-already-in-use":"An account with this email already exists.","auth/invalid-credential":"Email or password is incorrect.","auth/weak-password":"Password must be at least 8 characters.","auth/invalid-email":"Enter a valid email address.","auth/too-many-requests":"Too many attempts. Try again later.","auth/network-request-failed":"Network error. Check your connection.","permission-denied":"Permission denied."};
+const errText=e=>ERR[e.code]||("Something went wrong ("+(e.code||e.message)+")");
+let user=null,ready=false,prof={},orders=[],keys=[];
+
+async function register(){
+ const n=$("rn").value.trim(),e=$("re").value.trim().toLowerCase(),w=$("rw").value.trim(),p=$("rp").value;
+ if(n.length<3)return say("rm","Username must be at least 3 characters.");
+ if(!/^\S+@\S+\.\S+$/.test(e))return say("rm","Enter a valid email address.");
+ if(w.replace(/\D/g,"").length<8)return say("rm","Enter your WhatsApp number with country code.");
+ if(p.length<8)return say("rm","Password must be at least 8 characters.");
+ if(p!==$("rc").value)return say("rm","Passwords don’t match.");
+ say("rm","Creating account…",true);
+ try{const c=await createUserWithEmailAndPassword(auth,e,p);
+  await setDoc(doc(db,"users",c.user.uid),{name:n,email:e,whatsapp:w,balance:0,joined:Date.now()});
+  await loadDash();location.hash="#dashboard";
+ }catch(x){say("rm",errText(x))}
+}
+async function login(){
+ try{await signInWithEmailAndPassword(auth,$("le").value.trim(),$("lp").value);location.hash="#dashboard"}catch(x){say("lm",errText(x))}
+}
+async function forgot(ev){ev.preventDefault();const e=$("le").value.trim();
+ if(!e)return say("lm","Enter your email above first.");
+ try{await sendPasswordResetEmail(auth,e);say("lm","Password reset email sent. Check your inbox.",true)}catch(x){say("lm",errText(x))}
+}
+async function loadDash(){
+ if(!user)return;
+ try{
+  const [ps,os,ks]=await Promise.all([getDoc(doc(db,"users",user.uid)),getDocs(query(collection(db,"orders"),where("uid","==",user.uid))),getDocs(query(collection(db,"licenses"),where("assignedTo","==",user.uid)))]);
+  prof=ps.exists()?ps.data():{name:user.email,email:user.email,whatsapp:"",balance:0,joined:Date.now()};
+  orders=os.docs.map(d=>d.data()).sort((a,b)=>b.date-a.date);
+  keys=ks.docs.map(d=>({key:d.id,...d.data()}));
+  paint();
+ }catch(x){say("dm",errText(x))}
+}
+function paint(){
+ $("hi").textContent="Welcome, "+prof.name;
+ $("since").textContent="Member since "+new Date(prof.joined).toLocaleDateString();
+ $("sBal").textContent="$"+prof.balance;$("sKeys").textContent=keys.length;$("sOrd").textContent=orders.length;
+ $("keys").innerHTML=keys.length?keys.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan||"Panel")+' · added '+new Date(k.redeemedAt||Date.now()).toLocaleDateString()+'</small></div><button class="btn ghost sm" data-copy="'+esc(k.key)+'">Copy</button></div>').join(""):'<p class="empty">No panels yet. Buy one in the shop, then redeem the key we send you.</p>';
+ $("orders").innerHTML=orders.length?orders.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b><small>Player ID '+esc(o.pid)+' · '+new Date(o.date).toLocaleString()+'</small></div><div><span class="tag">$'+o.price+'</span> · '+esc(o.status)+'</div></div>').join(""):'<p class="empty">No orders yet. Your diamond orders will show up here.</p>';
+ $("prof").innerHTML='<div class="row"><span>Username</span><b>'+esc(prof.name)+'</b></div><div class="row"><span>Email</span><b>'+esc(prof.email)+'</b></div><div class="row"><span>WhatsApp</span><b>'+esc(prof.whatsapp)+'</b></div>';
+ const h=$("help");h.href=wa("Hi, I need help with my account ("+prof.email+")");h.target="_blank";h.rel="noopener";
+}
+async function order(){
+ const p=$("dp").value.trim(),v=$("dg").value.split("|");
+ if(!/^\d{6,12}$/.test(p))return say("dm","Enter a valid player ID (digits only).");
+ const item=v[0]+" diamonds";
+ try{await addDoc(collection(db,"orders"),{uid:user.uid,email:prof.email,item,price:+v[1],pid:p,status:"Pending payment",date:Date.now()});
+  say("dm","Order saved. Opening WhatsApp…",true);$("dp").value="";await loadDash();
+  window.open(wa("Hi, I want "+item+" ($"+v[1]+") for Free Fire ID "+p+". Account: "+prof.email),"_blank");
+ }catch(x){say("dm",errText(x))}
+}
+async function redeem(){
+ const k=$("kin").value.trim().toUpperCase();
+ if(!/^[A-Z0-9-]{6,40}$/.test(k))return say("km","Enter the full license key we sent you.");
+ try{const r=doc(db,"licenses",k),s=await getDoc(r);
+  if(!s.exists())return say("km","Key not found. Check it and try again.");
+  if(s.data().assignedTo)return say("km","This key has already been used.");
+  await updateDoc(r,{assignedTo:user.uid,redeemedAt:Date.now()});
+  $("kin").value="";say("km","Key added.",true);await loadDash();
+ }catch(x){say("km",errText(x))}
+}
+function route(){
+ if(!ready)return;
+ let h=location.hash.slice(1)||"login";
+ if(h==="dashboard"&&!user)h="login";
+ if((h==="login"||h==="register")&&user)h="dashboard";
+ document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+ $(h==="dashboard"?"v-dash":h==="register"?"v-register":"v-login").classList.add("on");
+ if(h==="dashboard")loadDash();
+ window.scrollTo(0,0);
+}
+if(false){document.querySelector("main").innerHTML='<div class="auth"><h1>Setup needed</h1><p class="sub">Paste your Firebase config into the script at the bottom of this file.</p></div>'}
+else{
+ onAuthStateChanged(auth,u=>{user=u;ready=true;route()});
+ window.addEventListener("hashchange",route);
+}
+$("rb").onclick=register;$("lb").onclick=login;$("dbtn").onclick=order;$("kbtn").onclick=redeem;$("fp").onclick=forgot;
+$("out").onclick=async()=>{await signOut(auth);location.hash="#login"};
+$("lp").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+$("rc").addEventListener("keydown",e=>{if(e.key==="Enter")register()});
+document.addEventListener("click",e=>{const c=e.target.dataset&&e.target.dataset.copy;if(c){try{navigator.clipboard.writeText(c);e.target.textContent="Copied"}catch(x){}}});
+$("shopLink").href="index.html";
+</script>
+</body>
+</html>

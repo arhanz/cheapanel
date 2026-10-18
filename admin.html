@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheapanel – Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#ffffff;--card:#f6f6f6;--line:#e2e2e2;--text:#111111;--mute:#666666;--acc:#ff4d1a;--acc2:#d63a0a;--err:#dc2626;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Rajdhani','Segoe UI',Arial,sans-serif;font-size:18px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;line-height:1.05;margin:0}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-family:'Anton',Impact,sans-serif;font-size:26px}.logo b{color:var(--acc);font-weight:400}
+.btn{display:inline-block;background:var(--acc);color:#000;font:inherit;font-weight:700;padding:12px 24px;border-radius:4px;border:0;cursor:pointer}
+.btn:hover{background:var(--acc2);color:#fff}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc);background:transparent}
+.btn.sm{padding:6px 14px}
+.view{display:none}.view.on{display:block}
+.auth{max-width:420px;margin:56px auto;padding:0 20px}
+.auth h1{font-size:48px;margin-bottom:8px}
+.auth p.sub{color:var(--mute);margin:0 0 24px}
+label{display:block;font-weight:700;margin:16px 0 6px}
+input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:4px;font:inherit}
+input:focus,select:focus{border-color:var(--acc);outline:none}
+.msg{min-height:24px;margin:12px 0;color:var(--err);font-weight:600}
+.msg.ok{color:var(--ok)}
+.auth .btn{width:100%;margin-top:6px}
+.alt{text-align:center;color:var(--mute);margin-top:18px}.alt a{color:var(--acc);font-weight:700}
+.dash{padding:36px 0 60px}
+.dash h1{font-size:clamp(34px,6vw,52px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:26px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px}
+.stat span{color:var(--mute)}.stat b{display:block;font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:38px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:18px}
+.panel h2{font-size:26px;margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.row small{color:var(--mute);display:block}
+code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
+.empty{color:var(--mute)}
+.tag{font-weight:700;color:var(--acc2)}
+.inline{display:flex;gap:8px}.inline input{flex:1}.inline .btn{width:auto;margin:0}
+@media(max-width:720px){.cols{grid-template-columns:1fr}}
+
+[hidden]{display:none!important}
+input[type=checkbox]{width:auto}
+textarea{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:4px;font:inherit;min-height:90px}
+select.st{width:auto}
+.tabsA{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}
+.tabsA button{background:none;border:1px solid var(--line);color:var(--text);padding:8px 18px;border-radius:4px;font:inherit;font-weight:700;cursor:pointer}
+.tabsA button.on{background:var(--acc);border-color:var(--acc);color:#000}
+.bar{display:flex;gap:10px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.banner{background:#fff4dc;border:1px solid var(--acc2);color:var(--acc2);padding:10px 14px;border-radius:4px;margin-bottom:16px;font-weight:600}
+.panel{margin-top:18px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.tbl{width:100%;border-collapse:collapse;min-width:640px}
+.tbl th{text-align:left;color:var(--mute);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl small{display:block;color:var(--mute)}
+.scroll{overflow-x:auto}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 10px;flex-wrap:wrap}
+.ph h2{font-size:30px}
+.mod{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;overflow:auto;padding:20px}
+.mbox{background:#fff;border:1px solid var(--line);border-radius:6px;max-width:560px;margin:20px auto;padding:22px}
+.mbox h2{margin-bottom:6px}
+.pill{background:none;font:inherit;cursor:pointer;font-weight:700;padding:2px 12px;border-radius:99px;border:1px solid var(--line);font-size:15px}
+.pill.on{color:var(--ok);border-color:var(--ok)}
+.pill.off{color:var(--mute)}
+.acts{white-space:nowrap}
+.dng:hover{border-color:var(--err)!important;color:var(--err)!important}
+.prev{color:var(--acc2);font-weight:700;min-height:26px;margin-top:10px}
+.panel,.stat{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+</style>
+</head>
+<body>
+<header class="wrap"><nav>
+<a class="logo" href="#">CHEA<b>PANEL</b> <span style="font-size:16px;color:var(--mute)">ADMIN</span></a>
+<button class="btn ghost sm" id="out" hidden>Log out</button>
+</nav></header>
+<main class="wrap">
+<div id="gate" class="auth"><h1>Admin</h1><p class="sub">Owner access only.</p>
+<label for="le">Email</label><input id="le" type="email" autocomplete="email">
+<label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password">
+<div class="msg" id="gm" role="alert"></div>
+<button class="btn" id="lb">Log in</button></div>
+<div id="app" hidden>
+<div class="tabsA" id="tabs"><button data-t="users" class="on">Users</button><button data-t="orders">Orders</button><button data-t="lic">Licenses</button><button data-t="prod">Products</button><button data-t="set">Settings</button></div>
+<div id="pane"></div>
+</div>
+</main>
+<div class="mod" id="md" hidden><div class="mbox" id="mb"></div></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,getDocs,getDoc,doc,setDoc,updateDoc,deleteDoc,query,where} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
+const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
+const $=i=>document.getElementById(i),pane=$("pane");
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const D=t=>t?new Date(t).toLocaleString():"-";
+const STAT=["Pending payment","Paid","Delivered","Cancelled"];
+let U=[],P=[],L=[],note="";
+const run=f=>f().catch(e=>{pane.innerHTML='<p class="msg">Error: '+esc(e.code||e.message)+'</p>'});
+
+onAuthStateChanged(auth,async u=>{
+ if(!u){$("gate").hidden=false;$("app").hidden=true;$("out").hidden=true;$("gm").textContent=note;return}
+ let ok=false;try{ok=(await getDoc(doc(db,"admins",u.uid))).exists()}catch(e){}
+ if(!ok){note="This account is not an admin.";await signOut(auth);return}
+ note="";$("gate").hidden=true;$("app").hidden=false;$("out").hidden=false;go("users");
+});
+$("lb").onclick=async()=>{note="";try{await signInWithEmailAndPassword(auth,$("le").value.trim(),$("lp").value)}catch(e){$("gm").textContent="Email or password is incorrect."}};
+$("lp").addEventListener("keydown",e=>{if(e.key==="Enter")$("lb").click()});
+$("out").onclick=()=>signOut(auth);
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+function go(t){
+ document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+ pane.innerHTML='<p class="empty">Loading…</p>';
+ run({users:vUsers,orders:vOrders,lic:vLic,prod:vProd,set:vSet}[t]);
+}
+
+/* USERS */
+const openM=h=>{$("mb").innerHTML=h;$("md").hidden=false};
+const closeM=()=>{$("md").hidden=true};
+$("md").addEventListener("click",e=>{if(e.target.id==="md")closeM()});
+async function vUsers(){
+ const s=await getDocs(collection(db,"users"));
+ U=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.joined||0)-(a.joined||0));
+ pane.innerHTML='<div class="ph"><h2>Users ('+U.length+')</h2><button class="btn sm" data-act="addu">+ Add user</button></div><div class="bar"><input id="qs" placeholder="Search name, email or WhatsApp" aria-label="Search users"></div><div class="panel scroll"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>WhatsApp</th><th>Balance</th><th>Joined</th><th></th></tr></thead><tbody id="ul"></tbody></table></div>';
+ const draw=()=>{const q=$("qs").value.toLowerCase();const l=U.filter(u=>((u.name||"")+(u.email||"")+(u.whatsapp||"")).toLowerCase().includes(q));
+  $("ul").innerHTML=l.length?l.map(u=>'<tr><td><b>'+esc(u.name)+'</b></td><td>'+esc(u.email)+'</td><td>'+esc(u.whatsapp)+'</td><td>$'+esc(u.balance)+'</td><td>'+(u.joined?new Date(u.joined).toLocaleDateString():"-")+'</td><td class="acts"><button class="btn ghost sm" data-act="view" data-id="'+esc(u.id)+'">View</button> <button class="btn ghost sm" data-act="editu" data-id="'+esc(u.id)+'">Edit</button> <button class="btn ghost sm dng" data-act="delu" data-id="'+esc(u.id)+'">Delete</button></td></tr>').join(""):'<tr><td colspan="6" class="empty">No users found.</td></tr>'};
+ $("qs").oninput=draw;draw();
+}
+function formU(u){
+ openM('<h2>Edit user</h2><label for="un">Name</label><input id="un" value="'+esc(u.name)+'"><label for="ue">Email (cannot be changed)</label><input id="ue" value="'+esc(u.email)+'" disabled><label for="uw">WhatsApp</label><input id="uw" value="'+esc(u.whatsapp)+'"><label for="ub">Balance (USD)</label><input id="ub" type="number" step="0.01" value="'+esc(u.balance)+'"><div class="msg" id="um"></div><div class="inline"><button class="btn" data-act="saveu" data-id="'+esc(u.id)+'">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
+}
+function formNewU(){
+ openM('<h2>Add user</h2><label for="mn">Name</label><input id="mn"><label for="me">Email</label><input id="me" type="email"><label for="mw">WhatsApp</label><input id="mw" type="tel"><label for="mp">Password (min 8 characters)</label><input id="mp" type="text" autocomplete="off"><div class="msg" id="mm"></div><div class="inline"><button class="btn" data-act="mku">Create user</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
+}
+async function vView(id){
+ const u=U.find(x=>x.id===id);
+ const [o,k]=await Promise.all([getDocs(query(collection(db,"orders"),where("uid","==",id))),getDocs(query(collection(db,"licenses"),where("assignedTo","==",id)))]);
+ const os=o.docs.map(d=>d.data()).sort((a,b)=>b.date-a.date),ks=k.docs.map(d=>({key:d.id,...d.data()}));
+ const wn=String(u.whatsapp||"").replace(/\D/g,"");
+ pane.innerHTML='<button class="btn ghost sm" data-act="back">← All users</button><div class="banner" style="margin-top:14px">Viewing '+esc(u.name)+'’s account (read only, exactly as they see it)</div>'
+ +'<div class="stats"><div class="stat"><span>Balance</span><b>$'+esc(u.balance)+'</b></div><div class="stat"><span>Active panels</span><b>'+ks.length+'</b></div><div class="stat"><span>Orders</span><b>'+os.length+'</b></div></div>'
+ +'<div class="panel"><h2>Profile</h2><div class="row"><span>Email</span><b>'+esc(u.email)+'</b></div><div class="row"><span>WhatsApp</span><b>'+esc(u.whatsapp)+'</b> <a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/'+wn+'">Chat</a></div><div class="row"><span>Joined</span><b>'+D(u.joined)+'</b></div><div class="row"><span>User ID</span><code>'+esc(id)+'</code></div></div>'
+ +'<div class="panel"><h2>Balance</h2><div class="inline"><input id="bal" type="number" step="0.01" value="'+esc(u.balance)+'" aria-label="Balance"><button class="btn" data-act="bal" data-id="'+esc(id)+'">Save</button></div><div class="msg" id="bm"></div></div>'
+ +'<div class="panel"><h2>Orders</h2>'+(os.length?os.map(x=>'<div class="row"><div><b>'+esc(x.item)+'</b><small>Player ID '+esc(x.pid)+' · '+D(x.date)+'</small></div><div><span class="tag">$'+esc(x.price)+'</span> · '+esc(x.status)+'</div></div>').join(""):'<p class="empty">No orders.</p>')+'</div>'
+ +'<div class="panel"><h2>Panels</h2>'+(ks.length?ks.map(x=>'<div class="row"><div><code>'+esc(x.key)+'</code><small>'+esc(x.plan)+' · redeemed '+D(x.redeemedAt)+'</small></div></div>').join(""):'<p class="empty">No panels.</p>')+'</div>';
+}
+
+/* ORDERS */
+async function vOrders(){
+ const s=await getDocs(collection(db,"orders"));
+ const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date-a.date);
+ const open=os.filter(o=>o.status==="Pending payment").length;
+ pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+' · Player ID '+esc(o.pid)+' · '+D(o.date)+'</small></div><select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
+}
+
+/* LICENSES */
+const AL="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const rnd=n=>Array.from(crypto.getRandomValues(new Uint32Array(n)),x=>AL[x%AL.length]).join("");
+function drawL(){$("ll").innerHTML=L.length?L.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan)+' · '+(k.assignedTo?'used by '+esc(k.assignedTo):'unused')+'</small></div><button class="btn ghost sm" data-act="delk" data-id="'+esc(k.key)+'">Delete</button></div>').join(""):'<p class="empty">No keys yet.</p>';$("lc").textContent=L.length}
+async function vLic(){
+ const s=await getDocs(collection(db,"licenses"));
+ L=s.docs.map(d=>({key:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));
+ pane.innerHTML='<div class="panel"><h2>Generate keys</h2><div class="grid2"><div><label for="lpn">Plan name</label><input id="lpn" placeholder="Free Fire - 1 Week"></div><div><label for="lqty">How many (1-50)</label><input id="lqty" type="number" min="1" max="50" value="1"></div></div><div class="msg" id="lmg"></div><button class="btn" data-act="gen">Generate</button><textarea id="lout" readonly placeholder="New keys appear here" aria-label="New keys" style="margin-top:12px"></textarea></div><div class="panel"><h2>All keys (<span id="lc"></span>)</h2><div id="ll"></div></div>';
+ drawL();
+}
+
+/* PRODUCTS */
+const PL=[["1 Week",7,"/ week","+ 3 days free","",""],["1 Month",30,"/ month","+ 1 week free","",""],["1 Year",255,"/ year","+ 1 month free",360,"30% OFF"]];
+const FE=["Precise aimbot, easy to use","Auto-updates included","Anti-ban protection","Setup help on WhatsApp"];
+const baseOf=p=>p.base??(p.old||p.price);
+const discOf=p=>p.disc??(p.old?Math.round((1-p.price/p.old)*100):0);
+async function vProd(){
+ const s=await getDocs(collection(db,"products"));
+ P=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
+ pane.innerHTML='<div class="ph"><h2>Plans ('+P.length+')</h2><div><button class="btn sm" data-act="addp">+ Add plan</button>'+(P.length?' <button class="btn ghost sm" data-act="feat">Apply default features to all</button>':' <button class="btn ghost sm" data-act="seed">Import default plans</button>')+'</div></div>'
+ +(P.length?'<div class="panel scroll"><table class="tbl"><thead><tr><th>Game</th><th>Plan</th><th>Original</th><th>Discount</th><th>Final price</th><th>Status</th><th></th></tr></thead><tbody>'+P.map(p=>'<tr><td>'+esc(p.game)+'</td><td><b>'+esc(p.name)+'</b><small>'+esc(p.bonus)+'</small></td><td>$'+esc(baseOf(p))+'</td><td>'+(discOf(p)>0?discOf(p)+'%':'-')+'</td><td><b>$'+esc(p.price)+'</b><small>'+esc(p.per)+'</small></td><td><button class="pill '+(p.active===false?'off':'on')+'" data-act="tog" data-id="'+esc(p.id)+'">'+(p.active===false?'Hidden':'Live')+'</button></td><td class="acts"><button class="btn ghost sm" data-act="editp" data-id="'+esc(p.id)+'">Edit</button> <button class="btn ghost sm dng" data-act="delp" data-id="'+esc(p.id)+'">Delete</button></td></tr>').join("")+'</tbody></table></div>':'<div class="panel"><p class="empty">Your shop is using the built-in default plans. Import them to edit prices and add discounts.</p></div>');
+}
+function formP(p){
+ p=p||{};
+ openM('<h2>'+(p.id?'Edit plan':'Add plan')+'</h2><input type="hidden" id="pid" value="'+esc(p.id||"")+'"><div class="grid2"><div><label for="pgame">Game</label><select id="pgame"><option value="ff"'+(p.cat==="pubg"?'':' selected')+'>Free Fire</option><option value="pubg"'+(p.cat==="pubg"?' selected':'')+'>PUBG Mobile</option></select></div><div><label for="pname">Plan name</label><input id="pname" value="'+esc(p.name||"")+'" placeholder="Aimbot Panel – 1 Week"></div><div><label for="pprice">Original price (USD)</label><input id="pprice" type="number" step="0.01" value="'+esc(p.id?baseOf(p):"")+'"></div><div><label for="pdisc">Discount % (0 = none)</label><input id="pdisc" type="number" min="0" max="95" value="'+esc(p.id?discOf(p):0)+'"></div><div><label for="pper">Period label</label><input id="pper" value="'+esc(p.per||"")+'" placeholder="/ week"></div><div><label for="pbonus">Bonus badge</label><input id="pbonus" value="'+esc(p.bonus||"")+'" placeholder="+ 3 days free"></div><div><label for="porder">Sort order</label><input id="porder" type="number" value="'+esc(p.order||0)+'"></div></div><div class="prev" id="pprev"></div><label for="pfeats">Features (one per line)</label><textarea id="pfeats">'+esc((p.feats||FE).join("\n"))+'</textarea><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pact"'+(p.active===false?'':' checked')+'> Show in shop</label><div class="msg" id="pm"></div><div class="inline"><button class="btn" data-act="savep">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
+ const pv=()=>{const b=+$("pprice").value,d=+$("pdisc").value||0;$("pprev").textContent=b>0?(d>0?'Shop shows: $'+b+' crossed out, final $'+(+(b*(1-d/100)).toFixed(2))+' with a '+d+'% OFF badge':'Shop shows: $'+b):''};
+ $("pprice").oninput=pv;$("pdisc").oninput=pv;pv();
+}
+
+/* SETTINGS */
+async function vSet(){
+ const s=await getDoc(doc(db,"settings","diamonds"));
+ const d=Object.assign({usd495:2.41,min:495,step:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
+ pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div>';
+}
+
+/* ACTIONS */
+const msg=(id,t,ok)=>{const m=$(id);if(m){m.textContent=t;m.className="msg"+(ok?" ok":"")}};
+const ACT={
+ view:id=>run(()=>vView(id)),
+ back:()=>go("users"),
+ closem:()=>closeM(),
+ feat:()=>{if(!confirm("Replace the feature list on ALL plans?"))return;run(async()=>{for(const p of P)await updateDoc(doc(db,"products",p.id),{feats:FE});await vProd()})},
+ addu:()=>formNewU(),
+ editu:id=>formU(U.find(x=>x.id===id)),
+ saveu:id=>run(async()=>{const n=$("un").value.trim();if(n.length<2)return msg("um","Enter a name.");const d={name:n,whatsapp:$("uw").value.trim(),balance:+$("ub").value||0};await updateDoc(doc(db,"users",id),d);closeM();await vUsers()}),
+ delu:id=>{if(!confirm("Delete this user's record, orders stay. Their login stays in Firebase Authentication until you remove it there. Continue?"))return;run(async()=>{await deleteDoc(doc(db,"users",id));await vUsers()})},
+ mku:()=>run(async()=>{
+  const n=$("mn").value.trim(),e=$("me").value.trim().toLowerCase(),w=$("mw").value.trim(),p=$("mp").value;
+  if(n.length<2||!/^\S+@\S+\.\S+$/.test(e)||p.length<8)return msg("mm","Enter a name, a valid email and a password of 8+ characters.");
+  const sa=initializeApp(cfg,"sec"+Date.now()),au=getAuth(sa),sd=getFirestore(sa);
+  try{const c=await createUserWithEmailAndPassword(au,e,p);await setDoc(doc(sd,"users",c.user.uid),{name:n,email:e,whatsapp:w,balance:0,joined:Date.now()});await signOut(au);closeM();await vUsers()}
+  catch(x){msg("mm",x.code==="auth/email-already-in-use"?"That email already has an account.":(x.code||x.message))}
+ }),
+ addp:()=>formP(),
+ editp:id=>formP(P.find(x=>x.id===id)),
+ tog:id=>run(async()=>{const p=P.find(x=>x.id===id);await updateDoc(doc(db,"products",id),{active:p.active===false});await vProd()}),
+ bal:id=>run(async()=>{await updateDoc(doc(db,"users",id),{balance:+$("bal").value||0});const u=U.find(x=>x.id===id);if(u)u.balance=+$("bal").value||0;msg("bm","Saved.",true)}),
+ gen:()=>run(async()=>{
+  const plan=$("lpn").value.trim(),n=Math.min(50,Math.max(1,Math.floor(+$("lqty").value)||1));
+  if(!plan)return msg("lmg","Enter a plan name.");
+  const out=[];for(let i=0;i<n;i++){const key="CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);await setDoc(doc(db,"licenses",key),{plan,assignedTo:null,created:Date.now()});out.push(key);L.unshift({key,plan,assignedTo:null,created:Date.now()})}
+  $("lout").value=out.join("\n");msg("lmg",n+" key(s) created. Copy them and send to the customer.",true);drawL()}),
+ delk:id=>{if(!confirm("Delete this key?"))return;run(async()=>{await deleteDoc(doc(db,"licenses",id));L=L.filter(k=>k.key!==id);drawL()})},
+ delp:id=>{if(!confirm("Delete this plan?"))return;run(async()=>{await deleteDoc(doc(db,"products",id));await vProd()})},
+ seed:()=>run(async()=>{let i=0;for(const [cat,game] of [["ff","Free Fire"],["pubg","PUBG Mobile"]])for(const p of PL){await setDoc(doc(collection(db,"products")),{cat,game,name:"Aimbot Panel – "+p[0],price:p[1],per:p[2],bonus:p[3],old:p[4],save:p[5],feats:FE,order:i++,active:true})}await vProd()}),
+ savep:()=>run(async()=>{
+  const name=$("pname").value.trim(),base=+$("pprice").value,disc=Math.min(95,Math.max(0,+$("pdisc").value||0));
+  if(!name||!(base>0))return msg("pm","Enter a plan name and a price.");
+  const price=disc>0?+(base*(1-disc/100)).toFixed(2):base;
+  const cat=$("pgame").value,id=$("pid").value||doc(collection(db,"products")).id;
+  await setDoc(doc(db,"products",id),{cat,game:cat==="ff"?"Free Fire":"PUBG Mobile",name,base,disc,price,old:disc>0?base:"",save:disc>0?disc+"% OFF":"",per:$("pper").value.trim(),bonus:$("pbonus").value.trim(),feats:$("pfeats").value.split("\n").map(x=>x.trim()).filter(Boolean),order:+$("porder").value||0,active:$("pact").checked});
+  closeM();await vProd()}),
+ saves:()=>run(async()=>{
+  const d={usd495:+$("s1").value,min:Math.floor(+$("s2").value),step:Math.floor(+$("s3").value),bulkAt:Math.floor(+$("s4").value),bulkPct:+$("s5").value};
+  if(!(d.usd495>0)||!(d.min>0)||!(d.step>0)||!(d.bulkAt>0)||d.bulkPct<0||d.bulkPct>90)return msg("sm","Check the values. All numbers must be positive.");
+  await setDoc(doc(db,"settings","diamonds"),d);msg("sm","Saved. The shop uses these prices now.",true)})
+};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.tagName==="SELECT")return;const f=ACT[b.dataset.act];if(f)f(b.dataset.id)});
+document.addEventListener("change",e=>{const s=e.target;if(s.dataset&&s.dataset.act==="st")run(()=>updateDoc(doc(db,"orders",s.dataset.id),{status:s.value}))});
+</script>
+</body>
+</html>
