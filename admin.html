@@ -204,11 +204,31 @@ function drawPay(note){
  +'<button class="btn ghost sm" data-act="addpm">+ Add payment method</button><label for="pnote2" style="margin-top:16px">Message for customers (optional)</label><textarea id="pnote2" placeholder="Send the exact amount and keep your screenshot.">'+esc(note)+'</textarea><div class="msg" id="pmg"></div><button class="btn" data-act="savepay">Save payment details</button>';
 }
 async function vSet(){
- const [s,ps]=await Promise.all([getDoc(doc(db,"settings","diamonds")),getDoc(doc(db,"settings","payment"))]);
+ const [s,ps,ns]=await Promise.all([getDoc(doc(db,"settings","diamonds")),getDoc(doc(db,"settings","payment")),getDoc(doc(db,"settings","notify"))]);
  const d=Object.assign({usd495:2.41,min:495,step:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
  const pd=ps.exists()?ps.data():{};PM=pd.methods||[];
- pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div><div class="panel" id="pp"></div>';
- drawPay(pd.note||"");
+ pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div><div class="panel" id="pp"></div><div class="panel" id="np"></div>';
+ drawPay(pd.note||"");drawNotify(ns.exists()?ns.data():{});
+}
+
+/* WHATSAPP + KEY ISSUING */
+const DEFTPL="Hi {name}, your payment is approved ✅\n\nOrder: {order}\n\n{details}\n\nYour panel is also saved in your account under My panels: https://cheapanel.store/account.html\n\nThank you for choosing Cheapanel!";
+const normPh=s=>{let d=String(s||"").replace(/\D/g,"");if(d.startsWith("00"))d=d.slice(2);if(d.startsWith("0"))d="92"+d.slice(1);return d};
+const UN={day:1,week:7,month:30,year:365};
+const daysOf=t=>{let n=0;String(t||"").replace(/(\d+)\s*(day|week|month|year)/gi,(m,a,u)=>{n+=+a*UN[u.toLowerCase()]});return n};
+const genKey=()=>"CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);
+async function sendWA(to,message){
+ const n=await getDoc(doc(db,"settings","notify"));const url=n.exists()?n.data().workerUrl:"";
+ if(!url)return {ok:false,why:"WhatsApp sending isn’t set up yet. Add the Worker URL in Settings."};
+ try{
+  const tok=await auth.currentUser.getIdToken();
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify({to,message})});
+  const o=await r.json().catch(()=>({}));
+  return r.ok&&o.ok?{ok:true}:{ok:false,why:"Sending failed ("+(o.error||o.status||r.status)+")."};
+ }catch(e){return {ok:false,why:"Could not reach the WhatsApp sender."}}
+}
+function drawNotify(nd){
+ $("np").innerHTML='<h2>WhatsApp notifications (WaSMS)</h2><p class="empty">After you approve an order, the customer receives their license key on WhatsApp.</p><label for="nurl">Worker URL</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://cheapanel-wa.yourname.workers.dev"><label for="ntpl">Message template</label><textarea id="ntpl" style="min-height:150px">'+esc(nd.template||DEFTPL)+'</textarea><p class="empty">You can use {name}, {order} and {details}. Keys are added in {details}.</p><div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button><label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div>';
 }
 
 /* ACTIONS */
@@ -226,7 +246,32 @@ const ACT={
   const r=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+esc(b)+'</b></div>';
   openM('<h2>Payment proof</h2>'+r("Order",d.item)+r("Amount","$"+d.price)+r("Method",d.method)+r("Sender",d.sender)+r("Transaction ID",d.txid)+(d.pid?r("Player ID",d.pid):"")+r("Status",d.status)+(im?'<img src="'+im+'" style="max-width:100%;margin-top:12px;border:1px solid var(--line);border-radius:6px" alt="Payment screenshot">':'<p class="empty">No screenshot found.</p>')+'<div class="inline" style="margin-top:16px"><button class="btn" data-act="appr" data-id="'+esc(id)+'">Approve</button><button class="btn ghost dng" data-act="rej" data-id="'+esc(id)+'">Reject</button><button class="btn ghost" data-act="closem">Close</button></div>');
  }),
- appr:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Paid"});closeM();await vOrders()}),
+ appr:id=>run(async()=>{
+  const d=(await getDoc(doc(db,"orders",id))).data();
+  const us=await getDoc(doc(db,"users",d.uid)),u=us.exists()?us.data():{name:"there",whatsapp:""};
+  const items=d.items||[{n:d.item,p:d.price,x:""}];
+  let keys=d.keys||[];const lines=[];
+  if(!d.keysIssued){
+   for(const it of items){
+    if(/diamond/i.test(it.n))continue;
+    let key;do{key=genKey()}while((await getDoc(doc(db,"licenses",key))).exists());
+    const dy=daysOf(it.n)+daysOf(it.x),now=Date.now();
+    await setDoc(doc(db,"licenses",key),{plan:it.n,assignedTo:d.uid,orderId:id,created:now,redeemedAt:now,days:dy,expiresAt:dy?now+dy*864e5:null});
+    keys.push({plan:it.n,key,days:dy});
+   }
+   await updateDoc(doc(db,"orders",id),{status:"Paid",keys,keysIssued:true});
+  }else if(d.status!=="Paid"){await updateDoc(doc(db,"orders",id),{status:"Paid"})}
+  keys.forEach(k=>lines.push("🔑 "+k.plan+"\nKey: "+k.key+(k.days?"\nValid for "+k.days+" days":"")));
+  items.filter(it=>/diamond/i.test(it.n)).forEach(it=>lines.push("💎 "+it.n+": we are topping up Player ID "+d.pid+" now."));
+  const ns=await getDoc(doc(db,"settings","notify")),tpl=(ns.exists()&&ns.data().template)||DEFTPL;
+  const text=tpl.replace("{name}",u.name||"there").replace("{order}",d.item).replace("{details}",lines.join("\n\n"));
+  const num=normPh(u.whatsapp);
+  await vOrders();
+  const res=num.length>=8?await sendWA(num,text):{ok:false,why:"This customer has no valid WhatsApp number."};
+  openM('<h2>Order approved</h2><div class="msg'+(res.ok?' ok':'')+'" style="min-height:0">'+(res.ok?'WhatsApp message sent to +'+esc(num)+'.':esc(res.why))+'</div><label>Message</label><textarea readonly>'+esc(text)+'</textarea><div class="inline" style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+num+'?text='+encodeURIComponent(text)+'">Send manually on WhatsApp</a><button class="btn ghost" data-act="closem">Close</button></div>');
+ }),
+ savenotify:()=>run(async()=>{await setDoc(doc(db,"settings","notify"),{workerUrl:$("nurl").value.trim(),template:$("ntpl").value});msg("nm","Saved.",true)}),
+ testwa:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number with country code.");const r=await sendWA(n,"Test message from Cheapanel admin ✅");msg("nm",r.ok?"Test sent. Check WhatsApp.":r.why,r.ok)}),
  rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders()}),
  feat:()=>{if(!confirm("Replace the feature list on ALL plans?"))return;run(async()=>{for(const p of P)await updateDoc(doc(db,"products",p.id),{feats:FE});await vProd()})},
  addu:()=>formNewU(),
