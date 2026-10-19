@@ -95,7 +95,7 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <select id="dg"><option value="495|2.41">495 diamonds – $2.41</option><option value="990|4.83">990 diamonds – $4.83</option><option value="2475|12.07">2475 diamonds – $12.07</option><option value="10000|43.89">10,000 diamonds – $43.89 (10% off)</option></select>
 <label for="dp">Free Fire player ID</label><input id="dp" inputmode="numeric">
 <div class="msg" id="dm" role="alert"></div>
-<button class="btn" id="dbtn" style="width:100%">Place order on WhatsApp</button></div>
+<button class="btn" id="dbtn" style="width:100%">Continue to payment</button></div>
 <div class="panel"><h2>My panels</h2>
 <div class="inline"><input id="kin" placeholder="Enter license key" aria-label="License key"><button class="btn" id="kbtn">Redeem</button></div>
 <div class="msg" id="km" role="alert"></div>
@@ -160,18 +160,17 @@ function paint(){
  $("since").textContent="Member since "+new Date(prof.joined).toLocaleDateString();
  $("sBal").textContent="$"+prof.balance;$("sKeys").textContent=keys.length;$("sOrd").textContent=orders.length;
  $("keys").innerHTML=keys.length?keys.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan||"Panel")+' · added '+new Date(k.redeemedAt||Date.now()).toLocaleDateString()+'</small></div><button class="btn ghost sm" data-copy="'+esc(k.key)+'">Copy</button></div>').join(""):'<p class="empty">No panels yet. Buy one in the shop, then redeem the key we send you.</p>';
- $("orders").innerHTML=orders.length?orders.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b><small>Player ID '+esc(o.pid)+' · '+new Date(o.date).toLocaleString()+'</small></div><div><span class="tag">$'+o.price+'</span> · '+esc(o.status)+'</div></div>').join(""):'<p class="empty">No orders yet. Your diamond orders will show up here.</p>';
+ $("orders").innerHTML=orders.length?orders.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b><small>'+(o.pid?'Player ID '+esc(o.pid)+' · ':'')+new Date(o.date).toLocaleString()+'</small></div><div><span class="tag">$'+o.price+'</span> · '+esc(o.status)+'</div></div>').join(""):'<p class="empty">No orders yet. Your diamond orders will show up here.</p>';
  $("prof").innerHTML='<div class="row"><span>Username</span><b>'+esc(prof.name)+'</b></div><div class="row"><span>Email</span><b>'+esc(prof.email)+'</b></div><div class="row"><span>WhatsApp</span><b>'+esc(prof.whatsapp)+'</b></div>';
  const h=$("help");h.href=wa("Hi, I need help with my account ("+prof.email+")");h.target="_blank";h.rel="noopener";
 }
 async function order(){
  const p=$("dp").value.trim(),v=$("dg").value.split("|");
  if(!/^\d{6,12}$/.test(p))return say("dm","Enter a valid player ID (digits only).");
- const item=v[0]+" diamonds";
- try{await addDoc(collection(db,"orders"),{uid:user.uid,email:prof.email,item,price:+v[1],pid:p,status:"Pending payment",date:Date.now()});
-  say("dm","Order saved. Opening WhatsApp…",true);$("dp").value="";await loadDash();
-  window.open(wa("Hi, I want "+item+" ($"+v[1]+") for Free Fire ID "+p+". Account: "+prof.email),"_blank");
- }catch(x){say("dm",errText(x))}
+ let c=[];try{c=JSON.parse(localStorage.getItem("cp_cart")||"[]")}catch(e){}
+ c.push({n:v[0]+" diamonds",p:+v[1],x:"",pid:p});
+ try{localStorage.setItem("cp_cart",JSON.stringify(c))}catch(e){}
+ location.href="checkout.html";
 }
 async function redeem(){
  const k=$("kin").value.trim().toUpperCase();

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheapanel – Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#ffffff;--card:#f6f6f6;--line:#e2e2e2;--text:#111111;--mute:#666666;--acc:#ff4d1a;--acc2:#d63a0a;--err:#dc2626;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Rajdhani','Segoe UI',Arial,sans-serif;font-size:18px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;line-height:1.05;margin:0}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-family:'Anton',Impact,sans-serif;font-size:26px}.logo b{color:var(--acc);font-weight:400}
+.btn{display:inline-block;background:var(--acc);color:#000;font:inherit;font-weight:700;padding:12px 24px;border-radius:4px;border:0;cursor:pointer}
+.btn:hover{background:var(--acc2);color:#fff}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc);background:transparent}
+.btn.sm{padding:6px 14px}
+.view{display:none}.view.on{display:block}
+.auth{max-width:420px;margin:56px auto;padding:0 20px}
+.auth h1{font-size:48px;margin-bottom:8px}
+.auth p.sub{color:var(--mute);margin:0 0 24px}
+label{display:block;font-weight:700;margin:16px 0 6px}
+input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:4px;font:inherit}
+input:focus,select:focus{border-color:var(--acc);outline:none}
+.msg{min-height:24px;margin:12px 0;color:var(--err);font-weight:600}
+.msg.ok{color:var(--ok)}
+.auth .btn{width:100%;margin-top:6px}
+.alt{text-align:center;color:var(--mute);margin-top:18px}.alt a{color:var(--acc);font-weight:700}
+.dash{padding:36px 0 60px}
+.dash h1{font-size:clamp(34px,6vw,52px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:26px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px}
+.stat span{color:var(--mute)}.stat b{display:block;font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:38px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:18px}
+.panel h2{font-size:26px;margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.row small{color:var(--mute);display:block}
+code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
+.empty{color:var(--mute)}
+.tag{font-weight:700;color:var(--acc2)}
+.inline{display:flex;gap:8px}.inline input{flex:1}.inline .btn{width:auto;margin:0}
+@media(max-width:720px){.cols{grid-template-columns:1fr}}
+.panel,.stat{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+
+[hidden]{display:none!important}
+.co{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0 60px;align-items:start}
+.pm{display:block;border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:10px;cursor:pointer}
+.pm.on{border-color:var(--acc);background:#fff6f2}
+.pm input{width:auto;margin-right:8px}
+.det{margin-top:8px;color:var(--mute)}.det b{color:var(--text)}
+.prevw{max-width:100%;max-height:260px;border-radius:6px;border:1px solid var(--line);margin-top:10px;display:block}
+.big{font-family:'Anton',Impact,sans-serif;font-size:34px}
+.note{background:#fff4dc;border:1px solid var(--acc2);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-weight:600}
+@media(max-width:720px){.co{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="wrap"><nav>
+<a class="logo" href="index.html">CHEA<b>PANEL</b></a>
+<div><a class="btn ghost sm" href="index.html">Back to shop</a> <a class="btn ghost sm" href="account.html">Account</a></div>
+</nav></header>
+<main class="wrap">
+<div id="gate" class="auth" hidden><h1>Log in to continue</h1><p class="sub">You need an account so we can match your payment to your order.</p><a class="btn" href="account.html" style="text-align:center">Log in or register</a><p class="alt">Come back to this page after logging in. Your cart is saved.</p></div>
+<div id="empty" class="auth" hidden><h1>Your cart is empty</h1><p class="sub">Pick a plan or diamonds first.</p><a class="btn" href="index.html" style="text-align:center">Go to the shop</a></div>
+<div id="done" class="auth" hidden><h1>Order received</h1><p class="sub">Thank you! We’ll check your payment and approve your order shortly. You can follow its status in your dashboard.</p><a class="btn" href="account.html" style="text-align:center">View my orders</a></div>
+<div id="main" hidden>
+<h1 style="font-size:clamp(34px,6vw,52px);margin-top:30px">Checkout</h1>
+<div class="co">
+<div class="panel"><h2>Your order</h2><div id="items"></div><div class="row"><b>Total</b><span class="big" id="total"></span></div></div>
+<div class="panel"><h2>Pay and send proof</h2>
+<div class="note" id="pnote" hidden></div>
+<div id="methods"></div>
+<div id="pidw" hidden><label for="pid">Free Fire player ID</label><input id="pid" inputmode="numeric"></div>
+<label for="snd">Sender name or account number</label><input id="snd">
+<label for="txid">Transaction ID</label><input id="txid">
+<label for="shot">Payment screenshot</label><input id="shot" type="file" accept="image/*"><img id="pv" class="prevw" alt="Screenshot preview" hidden>
+<div class="msg" id="msg" role="alert"></div>
+<button class="btn" id="sub" style="width:100%">Submit payment proof</button>
+</div></div></div>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,collection} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
+const db=getFirestore(initializeApp(cfg)),auth=getAuth();
+const $=i=>document.getElementById(i);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=x=>{x=+x;return Number.isInteger(x)?String(x):x.toFixed(2)};
+const say=(t,ok)=>{$("msg").textContent=t;$("msg").className="msg"+(ok?" ok":"")};
+let CART=[],user=null,prof={},pay={methods:[]},sel=-1,img=null;
+try{CART=JSON.parse(localStorage.getItem("cp_cart")||"[]")}catch(e){}
+const save=()=>{try{localStorage.setItem("cp_cart",JSON.stringify(CART))}catch(e){}};
+const hasDia=()=>CART.some(i=>/diamond/i.test(i.n));
+const total=()=>CART.reduce((a,i)=>a+(+i.p||0),0);
+
+function show(id){["gate","empty","done","main"].forEach(x=>$(x).hidden=x!==id)}
+function drawItems(){
+ $("items").innerHTML=CART.map((i,k)=>'<div class="row"><div><b>'+esc(i.n)+'</b><small>'+esc(i.x)+'</small></div><div>$'+money(i.p)+' <button class="btn ghost sm" data-k="'+k+'" aria-label="Remove item">Remove</button></div></div>').join("");
+ $("total").textContent="$"+money(total());
+ $("pidw").hidden=!hasDia();
+ if(!CART.length)show("empty");
+}
+function drawMethods(){
+ const m=pay.methods||[];
+ $("pnote").hidden=!pay.note;$("pnote").textContent=pay.note||"";
+ $("methods").innerHTML=m.length?m.map((x,i)=>'<label class="pm'+(i===sel?' on':'')+'"><input type="radio" name="pm" value="'+i+'"'+(i===sel?' checked':'')+'><b>'+esc(x.name)+'</b><div class="det">'+(x.title?'Account title: <b>'+esc(x.title)+'</b><br>':'')+'Number: <b>'+esc(x.number)+'</b> <button type="button" class="btn ghost sm" data-copy="'+esc(x.number)+'">Copy</button>'+(x.note?'<br>'+esc(x.note):'')+'</div></label>').join(""):'<p class="empty">Payment details haven’t been set up yet. Please contact us on WhatsApp.</p>';
+ document.querySelectorAll('input[name="pm"]').forEach(r=>r.onchange=()=>{sel=+r.value;drawMethods()});
+}
+function compress(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const sc=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);let q=.7,d=c.toDataURL("image/jpeg",q);while(d.length>700000&&q>.3){q-=.1;d=c.toDataURL("image/jpeg",q)}res(d)};im.onerror=()=>rej(new Error("bad"));im.src=u})}
+$("shot").onchange=async e=>{const f=e.target.files[0];img=null;$("pv").hidden=true;if(!f)return;
+ if(!f.type.startsWith("image/"))return say("Please choose an image file.");
+ try{img=await compress(f);$("pv").src=img;$("pv").hidden=false;say("")}catch(x){say("Could not read that image. Try another screenshot.")}};
+document.addEventListener("click",e=>{
+ const k=e.target.dataset&&e.target.dataset.k;if(k!==undefined){CART.splice(+k,1);save();drawItems();return}
+ const c=e.target.dataset&&e.target.dataset.copy;if(c){try{navigator.clipboard.writeText(c);e.target.textContent="Copied"}catch(x){}}
+});
+$("sub").onclick=async()=>{
+ const m=(pay.methods||[])[sel],pid=$("pid").value.trim(),snd=$("snd").value.trim(),tx=$("txid").value.trim();
+ if(!m)return say("Choose how you paid.");
+ if(hasDia()&&!/^\d{6,12}$/.test(pid))return say("Enter a valid Free Fire player ID (digits only).");
+ if(!snd||!tx)return say("Enter the sender name or number and the transaction ID.");
+ if(!img)return say("Upload your payment screenshot.");
+ $("sub").disabled=true;say("Sending…",true);
+ try{
+  const oref=doc(collection(db,"orders")),now=Date.now();
+  await setDoc(doc(db,"proofs",oref.id),{uid:user.uid,image:img,date:now});
+  await setDoc(oref,{uid:user.uid,email:user.email,item:CART.map(i=>i.n).join(", "),items:CART.map(i=>({n:i.n,p:i.p,x:i.x||""})),price:+total().toFixed(2),pid:hasDia()?pid:"",method:m.name,sender:snd,txid:tx,status:"Pending payment",hasProof:true,date:now});
+  CART=[];save();show("done");
+ }catch(x){$("sub").disabled=false;say("Could not send. "+(x.code||x.message))}
+};
+onAuthStateChanged(auth,async u=>{
+ user=u;
+ if(!u)return show("gate");
+ if(!CART.length)return show("empty");
+ try{
+  const [ps,py]=await Promise.all([getDoc(doc(db,"users",u.uid)),getDoc(doc(db,"settings","payment"))]);
+  prof=ps.exists()?ps.data():{};pay=py.exists()?py.data():{methods:[]};
+ }catch(x){}
+ const d=CART.find(i=>i.pid);if(d)$("pid").value=d.pid;
+ sel=(pay.methods||[]).length?0:-1;
+ show("main");drawItems();drawMethods();
+});
+</script>
+</body>
+</html>

@@ -78,6 +78,7 @@ select.st{width:auto}
 .dng:hover{border-color:var(--err)!important;color:var(--err)!important}
 .prev{color:var(--acc2);font-weight:700;min-height:26px;margin-top:10px}
 .panel,.stat{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.mrow{border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -106,7 +107,7 @@ const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
 const $=i=>document.getElementById(i),pane=$("pane");
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const D=t=>t?new Date(t).toLocaleString():"-";
-const STAT=["Pending payment","Paid","Delivered","Cancelled"];
+const STAT=["Pending payment","Paid","Delivered","Rejected","Cancelled"];
 let U=[],P=[],L=[],note="";
 const run=f=>f().catch(e=>{pane.innerHTML='<p class="msg">Error: '+esc(e.code||e.message)+'</p>'});
 
@@ -162,7 +163,7 @@ async function vOrders(){
  const s=await getDocs(collection(db,"orders"));
  const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date-a.date);
  const open=os.filter(o=>o.status==="Pending payment").length;
- pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+' · Player ID '+esc(o.pid)+' · '+D(o.date)+'</small></div><select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
+ pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+(o.pid?' · Player ID '+esc(o.pid):'')+' · '+D(o.date)+(o.hasProof?' · <b class="tag">Proof sent</b>':'')+'</small></div><div class="acts">'+(o.hasProof?'<button class="btn ghost sm" data-act="proof" data-id="'+esc(o.id)+'">Review</button> ':'')+'<select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
 }
 
 /* LICENSES */
@@ -195,10 +196,19 @@ function formP(p){
 }
 
 /* SETTINGS */
+let PM=[];
+const readPM=()=>Array.from(document.querySelectorAll(".mrow")).map(r=>({name:r.querySelector(".pn").value.trim(),title:r.querySelector(".pt").value.trim(),number:r.querySelector(".pa").value.trim(),note:r.querySelector(".px").value.trim()}));
+function drawPay(note){
+ $("pp").innerHTML='<h2>Payment details (shown at checkout)</h2><p class="empty">Customers pay to these accounts, then upload a screenshot for you to approve.</p>'
+ +PM.map((m,i)=>'<div class="mrow"><div class="grid2"><div><label>Method name</label><input class="pn" value="'+esc(m.name)+'" placeholder="Easypaisa"></div><div><label>Account title</label><input class="pt" value="'+esc(m.title)+'"></div><div><label>Account number / IBAN</label><input class="pa" value="'+esc(m.number)+'"></div><div><label>Extra note</label><input class="px" value="'+esc(m.note)+'" placeholder="Send as Send Money"></div></div><button class="btn ghost sm dng" style="margin-top:10px" data-act="rmpm" data-id="'+i+'">Remove</button></div>').join("")
+ +'<button class="btn ghost sm" data-act="addpm">+ Add payment method</button><label for="pnote2" style="margin-top:16px">Message for customers (optional)</label><textarea id="pnote2" placeholder="Send the exact amount and keep your screenshot.">'+esc(note)+'</textarea><div class="msg" id="pmg"></div><button class="btn" data-act="savepay">Save payment details</button>';
+}
 async function vSet(){
- const s=await getDoc(doc(db,"settings","diamonds"));
+ const [s,ps]=await Promise.all([getDoc(doc(db,"settings","diamonds")),getDoc(doc(db,"settings","payment"))]);
  const d=Object.assign({usd495:2.41,min:495,step:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
- pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div>';
+ const pd=ps.exists()?ps.data():{};PM=pd.methods||[];
+ pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div><div class="panel" id="pp"></div>';
+ drawPay(pd.note||"");
 }
 
 /* ACTIONS */
@@ -207,6 +217,17 @@ const ACT={
  view:id=>run(()=>vView(id)),
  back:()=>go("users"),
  closem:()=>closeM(),
+ addpm:()=>{PM=readPM();PM.push({name:"",title:"",number:"",note:""});drawPay($("pnote2").value)},
+ rmpm:i=>{PM=readPM();PM.splice(+i,1);drawPay($("pnote2").value)},
+ savepay:()=>run(async()=>{const m=readPM().filter(x=>x.name&&x.number);await setDoc(doc(db,"settings","payment"),{methods:m,note:$("pnote2").value.trim()});PM=m;msg("pmg","Saved. Customers see these at checkout.",true)}),
+ proof:id=>run(async()=>{
+  const [o,pr]=await Promise.all([getDoc(doc(db,"orders",id)),getDoc(doc(db,"proofs",id))]);
+  const d=o.data(),im=pr.exists()&&String(pr.data().image).startsWith("data:image/")?pr.data().image:"";
+  const r=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+esc(b)+'</b></div>';
+  openM('<h2>Payment proof</h2>'+r("Order",d.item)+r("Amount","$"+d.price)+r("Method",d.method)+r("Sender",d.sender)+r("Transaction ID",d.txid)+(d.pid?r("Player ID",d.pid):"")+r("Status",d.status)+(im?'<img src="'+im+'" style="max-width:100%;margin-top:12px;border:1px solid var(--line);border-radius:6px" alt="Payment screenshot">':'<p class="empty">No screenshot found.</p>')+'<div class="inline" style="margin-top:16px"><button class="btn" data-act="appr" data-id="'+esc(id)+'">Approve</button><button class="btn ghost dng" data-act="rej" data-id="'+esc(id)+'">Reject</button><button class="btn ghost" data-act="closem">Close</button></div>');
+ }),
+ appr:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Paid"});closeM();await vOrders()}),
+ rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders()}),
  feat:()=>{if(!confirm("Replace the feature list on ALL plans?"))return;run(async()=>{for(const p of P)await updateDoc(doc(db,"products",p.id),{feats:FE});await vProd()})},
  addu:()=>formNewU(),
  editu:id=>formU(U.find(x=>x.id===id)),

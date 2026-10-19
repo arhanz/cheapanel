@@ -141,7 +141,7 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 
 <section id="shop"><div class="wrap">
 <h2>Panels</h2>
-<p class="sub">Longer plans save more, and every plan comes with free bonus days. Order on WhatsApp in one tap.</p>
+<p class="sub">Longer plans save more, and every plan comes with free bonus days. Checkout takes about a minute.</p>
 <div class="tabs" role="tablist">
 <button class="tab" role="tab" aria-selected="true" data-cat="all">All</button>
 <button class="tab" role="tab" aria-selected="false" data-cat="ff">Free Fire</button>
@@ -168,12 +168,12 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 <p class="sub">Three steps, usually done in a few minutes.</p>
 <ol class="steps">
 <li><b>Choose a plan</b><span>Pick a panel, mod menu or diamond pack above.</span></li>
-<li><b>Order on WhatsApp</b><span>Tap Buy. Your product is filled into the message for you.</span></li>
-<li><b>Pay and receive</b><span>Pay with your preferred method and get your files or diamonds.</span></li>
+<li><b>Checkout</b><span>Add to cart, log in and choose how you want to pay.</span></li>
+<li><b>Send your payment screenshot</b><span>We check it and approve your order, then you get your panel or diamonds.</span></li>
 </ol>
 </div></section>
 
-<section><div class="wrap"><h2>Ready to win more matches?</h2><p class="sub">Choose your plan, order on WhatsApp, and get set up in minutes. Longer plans mean bigger savings and more free days.</p><a class="btn" href="#shop">Choose your plan</a></div></section>
+<section><div class="wrap"><h2>Ready to win more matches?</h2><p class="sub">Choose your plan, pay, and get set up in minutes. Longer plans mean bigger savings and more free days.</p><a class="btn" href="#shop">Choose your plan</a></div></section>
 
 <section id="faq"><div class="wrap">
 <h2>FAQ</h2>
@@ -188,7 +188,7 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 <footer><div class="wrap fgrid"><div><div class="logo">CHEA<b>PANEL</b></div><span>Panels and diamonds for Free Fire and PUBG.</span></div><div><b>Shop</b><a href="#shop">Panels</a><a href="#diamonds">Diamonds</a></div><div><b>Help</b><a href="#faq">FAQ</a><a id="fwa" href="#">WhatsApp support</a></div><div class="fine">© 2026 cheapanel.store · Not affiliated with Garena, Krafton or any game publisher.</div></div></footer>
 
 <div id="ov"></div>
-<aside id="drawer" aria-label="Cart"><div class="dh"><h2 style="font-size:30px">Your cart</h2><button class="rm" id="cx" type="button" aria-label="Close cart" style="font-size:22px">✕</button></div><div id="cl"></div><div class="tot"><span>Total</span><span id="ct">$0.00</span></div><a class="btn" id="co" href="#" style="text-align:center">Checkout on WhatsApp</a><button class="btn ghost" id="cclr" type="button" style="margin-top:8px">Clear cart</button></aside>
+<aside id="drawer" aria-label="Cart"><div class="dh"><h2 style="font-size:30px">Your cart</h2><button class="rm" id="cx" type="button" aria-label="Close cart" style="font-size:22px">✕</button></div><div id="cl"></div><div class="tot"><span>Total</span><span id="ct">$0.00</span></div><a class="btn" id="co" href="checkout.html" style="text-align:center">Checkout</a><button class="btn ghost" id="cclr" type="button" style="margin-top:8px">Clear cart</button></aside>
 
 <script>
 // EDIT THESE: your WhatsApp number (country code, no + or spaces) and your products
@@ -215,7 +215,7 @@ function render(cat){
   var sv=p.save?'<span class="save">'+p.save+'</span>':'';
   c.innerHTML='<div class="thumb '+p.cat+'"><b>'+(p.cat==="ff"?"FF":"PUBG")+'</b><i>AIMBOT</i></div><span class="game">'+p.game+'</span><h3>'+p.name+'</h3>'+bn+'<ul>'+li+'</ul>'+(sv?'<div>'+sv+'</div>':'')+'<div class="price">'+od+'$'+money(p.price)+' <small>'+p.per+'</small></div>';
   var a=document.createElement("a");a.className="btn ghost";a.textContent="Buy now";
-  a.href=link("Hi, I want to buy: "+p.name+" ("+p.game+") - $"+p.price+" "+p.per+(p.bonus?" "+p.bonus:""));a.target="_blank";a.rel="noopener";
+  a.href="checkout.html";a.onclick=function(){CART.push({n:p.name+" ("+p.game+")",p:+p.price,x:p.per+(p.bonus?" "+p.bonus:"")});persist()};
   var ad=document.createElement("button");ad.className="btn";ad.textContent="Add to cart";ad.onclick=function(){addCart(p.name+" ("+p.game+")",+p.price,p.per+(p.bonus?" "+p.bonus:""))};var bx=document.createElement("div");bx.className="btns";bx.appendChild(ad);bx.appendChild(a);c.appendChild(bx);grid.appendChild(c);
  });
 }
@@ -235,13 +235,13 @@ document.getElementById('dsave').hidden=!off;
 var n=document.getElementById('dnote');
 n.textContent=raw<MINQ?'Minimum order is 495 diamonds.':(off?BULKP+'% bulk discount applied.':'Add '+fmt(BULK-q)+' more diamonds to get '+BULKP+'% off.');
 n.style.color=raw<MINQ?'#dc2626':'#666';
-document.getElementById('dbuy').href=link('Hi, I want '+fmt(q)+' Free Fire diamonds - $'+usd);}
+document.getElementById('dbuy').href='checkout.html';}
 function dset(v){dq.value=Math.min(1000000,Math.max(MINQ,v));dcalc()}
 dq.addEventListener('input',dcalc);dq.addEventListener('blur',function(){dset(dqty())});
 document.getElementById('dm').onclick=function(){dset(dqty()-STEP)};
 document.getElementById('dp').onclick=function(){dset(dqty()+STEP)};
 document.querySelectorAll('.qc').forEach(function(c){c.addEventListener('click',function(){dset(+c.dataset.q)})});
-var dbuy=document.getElementById('dbuy');dbuy.target='_blank';dbuy.rel='noopener';dcalc();
+var dbuy=document.getElementById('dbuy');dbuy.onclick=function(){var q=dqty(),f=q*RATE,rs=q>=BULK?f*(1-BULKP/100):f;CART.push({n:fmt(q)+' Free Fire diamonds',p:+(rs/PKR).toFixed(2),x:''});persist()};dcalc();
 document.getElementById('dadd').onclick=function(){var q=dqty(),f=q*RATE,rs=q>=BULK?f*(1-BULKP/100):f;addCart(fmt(q)+' Free Fire diamonds',+(rs/PKR).toFixed(2),'')};
 render("all");
 var CART=[];try{CART=JSON.parse(localStorage.getItem('cp_cart')||'[]')}catch(e){}
@@ -254,7 +254,7 @@ document.getElementById('cc').textContent=CART.length;
 if(!CART.length){l.innerHTML='<p class="empty">Your cart is empty.</p>'}else{l.innerHTML=CART.map(function(i,k){t+=i.p;return '<div class="ci"><div><b>'+i.n+'</b><small>'+i.x+'</small></div><div>$'+i.p.toFixed(2)+' <button class="rm" data-k="'+k+'" aria-label="Remove">✕</button></div></div>'}).join('')}
 document.getElementById('ct').textContent='$'+t.toFixed(2);
 var msg='Hi, I want to order:\n'+CART.map(function(i){return '- '+i.n+' '+i.x+' - $'+i.p.toFixed(2)}).join('\n')+'\nTotal: $'+t.toFixed(2);
-var co=document.getElementById('co');co.href=CART.length?link(msg):'#';co.target='_blank';co.rel='noopener'}
+var co=document.getElementById('co');co.href='checkout.html';co.style.display=CART.length?'block':'none'}
 document.getElementById('cb').onclick=openCart;document.getElementById('cx').onclick=closeCart;document.getElementById('ov').onclick=closeCart;
 document.getElementById('cclr').onclick=function(){CART=[];persist();drawCart()};
 document.addEventListener('click',function(e){var k=e.target.dataset&&e.target.dataset.k;if(k!==undefined){CART.splice(+k,1);persist();drawCart()}});
