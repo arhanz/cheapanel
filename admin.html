@@ -218,16 +218,31 @@ const UN={day:1,week:7,month:30,year:365};
 const daysOf=t=>{let n=0;String(t||"").replace(/(\d+)\s*(day|week|month|year)/gi,(m,a,u)=>{n+=+a*UN[u.toLowerCase()]});return n};
 const genKey=()=>"CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);
 const WAERR={NO_KEY:"Add your WaSMS API key in Settings first.",UNAUTHORIZED:"WaSMS rejected the API key. Check it.",INSUFFICIENT_SCOPE:"The API key needs the messages:send permission (and accounts:read to find the account ID).",WHATSAPP_NOT_CONNECTED:"Your WhatsApp number isn’t connected in WaSMS.",WHATSAPP_DISCONNECTED:"Your WhatsApp number is disconnected in WaSMS.",NO_CONNECTED_ACCOUNT:"No connected WhatsApp number found in WaSMS.",PLAN_LIMIT:"Your WaSMS plan limit is used up.",RATE_LIMITED:"Too many requests. Try again in a minute.",NOT_ADMIN:"This account isn’t an admin.",BAD_TOKEN:"Please log in again."};
+const WB="https://wasms.net/api/public/v1";
 async function callWA(payload){
- const n=await getDoc(doc(db,"settings","notify"));const url=n.exists()?n.data().workerUrl:"";
- if(!url)return {ok:false,why:"WhatsApp sending isn’t set up yet. Add the Worker URL in Settings."};
+ const n=await getDoc(doc(db,"settings","notify"));const url=n.exists()?(n.data().workerUrl||""):"";
+ if(url){
+  try{
+   const tok=await auth.currentUser.getIdToken();
+   const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(payload)});
+   const o=await r.json().catch(()=>({}));
+   if(r.ok&&o.ok)return o;
+   return {ok:false,why:WAERR[o.error]||"Request failed ("+(o.error||r.status)+")."};
+  }catch(e){return {ok:false,why:"Could not reach the Worker. Check the Worker URL."}}
+ }
+ const sd=await getDoc(doc(db,"secrets","wasms")),k=sd.exists()?sd.data().apiKey:"",acc=sd.exists()?sd.data().accountId:"";
+ if(!k)return {ok:false,why:WAERR.NO_KEY};
+ const fail=(o,r)=>({ok:false,why:WAERR[o.code||o.error]||"WaSMS answered with an error ("+(o.code||o.error||r.status)+")."});
  try{
-  const tok=await auth.currentUser.getIdToken();
-  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(payload)});
-  const o=await r.json().catch(()=>({}));
-  if(r.ok&&o.ok)return o;
-  return {ok:false,why:WAERR[o.error]||"Request failed ("+(o.error||r.status)+")."};
- }catch(e){return {ok:false,why:"Could not reach the WhatsApp sender. Check the Worker URL."}}
+  const H={Authorization:"Bearer "+k};
+  if(payload.action==="accounts"){
+   const r=await fetch(WB+"/whatsapp/accounts",{headers:H}),o=await r.json().catch(()=>({}));
+   return r.ok&&o.success!==false?{ok:true,accounts:o.data||[]}:fail(o,r);
+  }
+  const body={to:payload.to,message:payload.message};if(acc)body.whatsapp_id=acc;
+  const r=await fetch(WB+"/whatsapp/send",{method:"POST",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify(body)}),o=await r.json().catch(()=>({}));
+  return r.ok&&o.success!==false?{ok:true}:fail(o,r);
+ }catch(e){return {ok:false,why:"WaSMS didn’t accept the request from the browser, so it may block this. Use Send manually, or set up the Worker."}}
 }
 const sendWA=(to,message)=>callWA({to,message});
 function drawNotify(nd,sd){
@@ -235,7 +250,7 @@ function drawNotify(nd,sd){
  +'<label for="nkey">WaSMS API key</label><input id="nkey" type="password" autocomplete="off" placeholder="'+(sd.apiKey?'Saved. Leave blank to keep it':'wasms_…')+'">'
  +'<label for="nacc">WhatsApp account ID (optional)</label><input id="nacc" value="'+esc(sd.accountId||"")+'" placeholder="Empty = your first connected number">'
  +'<div style="margin-top:8px"><button class="btn ghost sm" data-act="findacc">Find my account ID</button></div><div id="acl"></div>'
- +'<label for="nurl">Worker URL</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://something.workers.dev">'
+ +'<label for="nurl">Worker URL (optional, empty = send directly)</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://something.workers.dev">'
  +'<label for="ntpl">Message template</label><textarea id="ntpl" style="min-height:150px">'+esc(nd.template||DEFTPL)+'</textarea><p class="empty">You can use {name}, {order} and {details}. Keys are added in {details}.</p><div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
  +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div>';
 }
