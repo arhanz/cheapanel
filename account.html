@@ -125,6 +125,12 @@ const ERR={"auth/email-already-in-use":"An account with this email already exist
 const errText=e=>ERR[e.code]||("Something went wrong ("+(e.code||e.message)+")");
 let user=null,ready=false,prof={},orders=[],keys=[];
 
+async function ping(body){
+ try{const n=await getDoc(doc(db,"settings","notify")),url=n.exists()?(n.data().workerUrl||""):"";if(!url)return;
+  const tok=await auth.currentUser.getIdToken();
+  await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(body)});
+ }catch(e){}
+}
 async function register(){
  const n=$("rn").value.trim(),e=$("re").value.trim().toLowerCase(),w=$("rw").value.trim(),p=$("rp").value;
  if(n.length<3)return say("rm","Username must be at least 3 characters.");
@@ -135,7 +141,7 @@ async function register(){
  say("rm","Creating account…",true);
  try{const c=await createUserWithEmailAndPassword(auth,e,p);
   await setDoc(doc(db,"users",c.user.uid),{name:n,email:e,whatsapp:w,balance:0,joined:Date.now()});
-  await loadDash();location.hash="#dashboard";
+  ping({action:"welcome"});await loadDash();location.hash="#dashboard";
  }catch(x){say("rm",errText(x))}
 }
 async function login(){

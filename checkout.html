@@ -102,6 +102,12 @@ const save=()=>{try{localStorage.setItem("cp_cart",JSON.stringify(CART))}catch(e
 const hasDia=()=>CART.some(i=>/diamond/i.test(i.n));
 const total=()=>CART.reduce((a,i)=>a+(+i.p||0),0);
 
+async function ping(body){
+ try{const n=await getDoc(doc(db,"settings","notify")),url=n.exists()?(n.data().workerUrl||""):"";if(!url)return;
+  const tok=await auth.currentUser.getIdToken();
+  await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(body)});
+ }catch(e){}
+}
 function show(id){["gate","empty","done","main"].forEach(x=>$(x).hidden=x!==id)}
 function drawItems(){
  $("items").innerHTML=CART.map((i,k)=>'<div class="row"><div><b>'+esc(i.n)+'</b><small>'+esc(i.x)+'</small></div><div>$'+money(i.p)+' <button class="btn ghost sm" data-k="'+k+'" aria-label="Remove item">Remove</button></div></div>').join("");
@@ -134,7 +140,7 @@ $("sub").onclick=async()=>{
   const oref=doc(collection(db,"orders")),now=Date.now();
   await setDoc(doc(db,"proofs",oref.id),{uid:user.uid,image:img,date:now});
   await setDoc(oref,{uid:user.uid,email:user.email,item:CART.map(i=>i.n).join(", "),items:CART.map(i=>({n:i.n,p:i.p,x:i.x||""})),price:+total().toFixed(2),pid:hasDia()?pid:"",method:m.name,sender:snd,txid:tx,status:"Pending payment",hasProof:true,date:now});
-  CART=[];save();show("done");
+  ping({action:"neworder",orderId:oref.id});CART=[];save();show("done");
  }catch(x){$("sub").disabled=false;say("Could not send. "+(x.code||x.message))}
 };
 onAuthStateChanged(auth,async u=>{

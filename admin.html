@@ -234,25 +234,38 @@ async function callWA(payload){
  if(!k)return {ok:false,why:WAERR.NO_KEY};
  const fail=(o,r)=>({ok:false,why:WAERR[o.code||o.error]||"WaSMS answered with an error ("+(o.code||o.error||r.status)+")."});
  try{
-  const H={Authorization:"Bearer "+k};
-  if(payload.action==="accounts"){
-   const r=await fetch(WB+"/whatsapp/accounts",{headers:H}),o=await r.json().catch(()=>({}));
-   return r.ok&&o.success!==false?{ok:true,accounts:o.data||[]}:fail(o,r);
-  }
-  const body={to:payload.to,message:payload.message};if(acc)body.whatsapp_id=acc;
-  const r=await fetch(WB+"/whatsapp/send",{method:"POST",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify(body)}),o=await r.json().catch(()=>({}));
-  return r.ok&&o.success!==false?{ok:true}:fail(o,r);
- }catch(e){return {ok:false,why:"WaSMS didn’t accept the request from the browser, so it may block this. Use Send manually, or set up the Worker."}}
+  if(payload.action==="accounts")return {ok:false,why:"Finding the account ID needs the Worker. Your saved ID will still be used."};
+  const q=new URLSearchParams({to:payload.to,message:payload.message,secret:k});if(acc)q.set("whatsapp_id",acc);
+  await fetch(WB+"/whatsapp/send?"+q.toString(),{mode:"no-cors"});
+  return {ok:true,unconfirmed:true};
+ }catch(e){return {ok:false,why:"Could not reach WaSMS. Check your internet connection."}}
 }
 const sendWA=(to,message)=>callWA({to,message});
+const fill=(t,o)=>String(t||"").replace(/\{(\w+)\}/g,(m,k)=>o[k]!=null?o[k]:m);
+const TPL=[["welcome","Welcome message","Sent automatically when someone registers (needs the Worker and the WASMS_KEY secret).",1],["received","Order received","Sent when a customer uploads a payment screenshot (needs the Worker and the WASMS_KEY secret).",1],["approved","Order approved","Sent when you approve an order. License keys go in {details}.",0],["rejected","Order rejected","Sent when you reject an order.",1],["delivered","Order delivered","Sent when you set an order to Delivered, for example after a diamond top-up.",1]];
+const DEFT={welcome:"Welcome to Cheapanel, {name}! 🎉\nYour account is ready. Browse our plans and diamonds at https://cheapanel.store\nNeed help? Just reply to this message.",received:"Hi {name}, we received your payment proof for {order} ({amount}). We’ll verify it and get back to you shortly. ⏳",approved:DEFTPL,rejected:"Hi {name}, we couldn’t verify your payment for {order}. Please check your screenshot and transaction ID, then contact us on WhatsApp. ❌",delivered:"Hi {name}, your order {order} has been delivered ✅ Thank you for choosing Cheapanel!"};
 function drawNotify(nd,sd){
- $("np").innerHTML='<h2>WhatsApp notifications (WaSMS)</h2><p class="empty">After you approve an order, the customer receives their license key on WhatsApp.</p>'
+ const T=nd.templates||{};
+ $("np").innerHTML='<h2>WhatsApp notifications (WaSMS)</h2><p class="empty">Connect WaSMS, then choose which messages customers receive.</p>'
  +'<label for="nkey">WaSMS API key</label><input id="nkey" type="password" autocomplete="off" placeholder="'+(sd.apiKey?'Saved. Leave blank to keep it':'wasms_…')+'">'
  +'<label for="nacc">WhatsApp account ID (optional)</label><input id="nacc" value="'+esc(sd.accountId||"")+'" placeholder="Empty = your first connected number">'
  +'<div style="margin-top:8px"><button class="btn ghost sm" data-act="findacc">Find my account ID</button></div><div id="acl"></div>'
- +'<label for="nurl">Worker URL (optional, empty = send directly)</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://something.workers.dev">'
- +'<label for="ntpl">Message template</label><textarea id="ntpl" style="min-height:150px">'+esc(nd.template||DEFTPL)+'</textarea><p class="empty">You can use {name}, {order} and {details}. Keys are added in {details}.</p><div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
+ +'<label for="nurl">Worker URL (optional, empty = send directly)</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://something.pages.dev">'
+ +'<h2 style="margin-top:24px">Message templates</h2><p class="empty">You can use {name}, {order}, {amount} and {details}.</p>'
+ +TPL.map(([k,t,d,auto])=>'<div class="mrow"><b>'+t+'</b><p class="empty" style="margin:2px 0 8px">'+d+'</p>'+(auto?'<label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="ton_'+k+'"'+((T[k]||{}).on?' checked':'')+'> Send automatically</label>':'')+'<textarea id="ttx_'+k+'" style="min-height:110px">'+esc((T[k]||{}).text||(k==="approved"?(nd.template||DEFT[k]):DEFT[k]))+'</textarea></div>').join("")
+ +'<div class="mrow"><b>New order alert for you</b><p class="empty" style="margin:2px 0 8px">Get a WhatsApp message when a customer sends a payment screenshot (needs the Worker and the WASMS_KEY secret).</p><label for="nadm">Your WhatsApp number</label><input id="nadm" value="'+esc(nd.adminPhone||"")+'" placeholder="923001234567"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nal"'+(nd.alertAdmin?' checked':'')+'> Alert me on new orders</label></div>'
+ +'<div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
  +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div>';
+}
+async function notifyOrder(kind,id){
+ const d=(await getDoc(doc(db,"orders",id))).data();
+ const us=await getDoc(doc(db,"users",d.uid)),u=us.exists()?us.data():{name:"there",whatsapp:""};
+ const ns=await getDoc(doc(db,"settings","notify")),nd=ns.exists()?ns.data():{},t=(nd.templates||{})[kind]||{};
+ if(!t.on)return;
+ const num=normPh(u.whatsapp);if(num.length<8)return;
+ const text=fill(t.text||DEFT[kind],{name:u.name||"there",order:d.item,amount:"$"+d.price,details:""});
+ const res=await sendWA(num,text);
+ openM('<h2>Customer notified</h2><div class="msg'+(res.ok?' ok':'')+'" style="min-height:0">'+(res.ok?(res.unconfirmed?'Request sent to +'+esc(num)+'. Delivery can’t be confirmed in this mode.':'WhatsApp message sent to +'+esc(num)+'.'):esc(res.why))+'</div><textarea readonly>'+esc(text)+'</textarea><div class="inline" style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+num+'?text='+encodeURIComponent(text)+'">Send manually</a><button class="btn ghost" data-act="closem">Close</button></div>');
 }
 
 /* ACTIONS */
@@ -287,17 +300,18 @@ const ACT={
   }else if(d.status!=="Paid"){await updateDoc(doc(db,"orders",id),{status:"Paid"})}
   keys.forEach(k=>lines.push("🔑 "+k.plan+"\nKey: "+k.key+(k.days?"\nValid for "+k.days+" days":"")));
   items.filter(it=>/diamond/i.test(it.n)).forEach(it=>lines.push("💎 "+it.n+": we are topping up Player ID "+d.pid+" now."));
-  const ns=await getDoc(doc(db,"settings","notify")),tpl=(ns.exists()&&ns.data().template)||DEFTPL;
-  const text=tpl.replace("{name}",u.name||"there").replace("{order}",d.item).replace("{details}",lines.join("\n\n"));
+  const ns=await getDoc(doc(db,"settings","notify")),nd=ns.exists()?ns.data():{},tpl=((nd.templates||{}).approved||{}).text||nd.template||DEFTPL;
+  const text=fill(tpl,{name:u.name||"there",order:d.item,amount:"$"+d.price,details:lines.join("\n\n")});
   const num=normPh(u.whatsapp);
   await vOrders();
   const res=num.length>=8?await sendWA(num,text):{ok:false,why:"This customer has no valid WhatsApp number."};
-  openM('<h2>Order approved</h2><div class="msg'+(res.ok?' ok':'')+'" style="min-height:0">'+(res.ok?'WhatsApp message sent to +'+esc(num)+'.':esc(res.why))+'</div><label>Message</label><textarea readonly>'+esc(text)+'</textarea><div class="inline" style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+num+'?text='+encodeURIComponent(text)+'">Send manually on WhatsApp</a><button class="btn ghost" data-act="closem">Close</button></div>');
+  openM('<h2>Order approved</h2><div class="msg'+(res.ok?' ok':'')+'" style="min-height:0">'+(res.ok?(res.unconfirmed?'Message request sent to +'+esc(num)+'. This mode can’t confirm delivery. If it doesn’t arrive, use the button below.':'WhatsApp message sent to +'+esc(num)+'.'):esc(res.why))+'</div><label>Message</label><textarea readonly>'+esc(text)+'</textarea><div class="inline" style="margin-top:14px"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+num+'?text='+encodeURIComponent(text)+'">Send manually on WhatsApp</a><button class="btn ghost" data-act="closem">Close</button></div>');
  }),
  savenotify:()=>run(async()=>{
   const k=$("nkey").value.trim(),acc=$("nacc").value.trim();
   if(k&&!/^wasms_/.test(k))return msg("nm","The API key should start with wasms_.");
-  await setDoc(doc(db,"settings","notify"),{workerUrl:$("nurl").value.trim(),template:$("ntpl").value});
+  const templates={};TPL.forEach(([id,,,auto])=>{templates[id]={on:auto?$("ton_"+id).checked:true,text:$("ttx_"+id).value}});
+  await setDoc(doc(db,"settings","notify"),{workerUrl:$("nurl").value.trim(),template:templates.approved.text,templates,adminPhone:normPh($("nadm").value),alertAdmin:$("nal").checked});
   const cur=await getDoc(doc(db,"secrets","wasms")),old=cur.exists()?cur.data():{};
   await setDoc(doc(db,"secrets","wasms"),{apiKey:k||old.apiKey||"",accountId:acc});
   $("nkey").value="";$("nkey").placeholder="Saved. Leave blank to keep it";msg("nm","Saved.",true)}),
@@ -308,8 +322,8 @@ const ACT={
   $("acl").innerHTML=l.length?l.map(a=>'<div class="row"><div><b>'+esc(a.phone||a.display_name||a.name||a.id)+'</b><small>'+esc(a.id)+'</small></div><button class="btn ghost sm" data-act="pickacc" data-id="'+esc(a.id)+'">Use</button></div>').join(""):'<p class="empty">No connected WhatsApp numbers found.</p>';
   msg("nm","");}),
  pickacc:id=>{$("nacc").value=id;$("acl").innerHTML=""},
- testwa:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number with country code.");const r=await sendWA(n,"Test message from Cheapanel admin ✅");msg("nm",r.ok?"Test sent. Check WhatsApp.":r.why,r.ok)}),
- rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders()}),
+ testwa:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number with country code.");const r=await sendWA(n,"Test message from Cheapanel admin ✅");msg("nm",r.ok?(r.unconfirmed?"Test request sent. Check your WhatsApp. This mode can’t confirm delivery.":"Test sent. Check WhatsApp."):r.why,r.ok)}),
+ rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders();await notifyOrder("rejected",id)}),
  feat:()=>{if(!confirm("Replace the feature list on ALL plans?"))return;run(async()=>{for(const p of P)await updateDoc(doc(db,"products",p.id),{feats:FE});await vProd()})},
  addu:()=>formNewU(),
  editu:id=>formU(U.find(x=>x.id===id)),
@@ -347,7 +361,7 @@ const ACT={
   await setDoc(doc(db,"settings","diamonds"),d);msg("sm","Saved. The shop uses these prices now.",true)})
 };
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.tagName==="SELECT")return;const f=ACT[b.dataset.act];if(f)f(b.dataset.id)});
-document.addEventListener("change",e=>{const s=e.target;if(s.dataset&&s.dataset.act==="st")run(()=>updateDoc(doc(db,"orders",s.dataset.id),{status:s.value}))});
+document.addEventListener("change",e=>{const s=e.target;if(s.dataset&&s.dataset.act==="st")run(async()=>{await updateDoc(doc(db,"orders",s.dataset.id),{status:s.value});if(s.value==="Delivered")await notifyOrder("delivered",s.dataset.id);if(s.value==="Rejected")await notifyOrder("rejected",s.dataset.id)})});
 </script>
 </body>
 </html>
