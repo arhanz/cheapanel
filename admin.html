@@ -234,7 +234,7 @@ async function callWA(payload){
  if(!k)return {ok:false,why:WAERR.NO_KEY};
  const fail=(o,r)=>({ok:false,why:WAERR[o.code||o.error]||"WaSMS answered with an error ("+(o.code||o.error||r.status)+")."});
  try{
-  if(payload.action==="accounts")return {ok:false,why:"Finding the account ID needs the Worker. Your saved ID will still be used."};
+  if(payload.action)return {ok:false,why:"This needs the Worker. Add the Worker URL first."};
   const q=new URLSearchParams({to:payload.to,message:payload.message,secret:k});if(acc)q.set("whatsapp_id",acc);
   await fetch(WB+"/whatsapp/send?"+q.toString(),{mode:"no-cors"});
   return {ok:true,unconfirmed:true};
@@ -255,7 +255,7 @@ function drawNotify(nd,sd){
  +TPL.map(([k,t,d,auto])=>'<div class="mrow"><b>'+t+'</b><p class="empty" style="margin:2px 0 8px">'+d+'</p>'+(auto?'<label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="ton_'+k+'"'+((T[k]||{}).on?' checked':'')+'> Send automatically</label>':'')+'<textarea id="ttx_'+k+'" style="min-height:110px">'+esc((T[k]||{}).text||(k==="approved"?(nd.template||DEFT[k]):DEFT[k]))+'</textarea></div>').join("")
  +'<div class="mrow"><b>New order alert for you</b><p class="empty" style="margin:2px 0 8px">Get a WhatsApp message when a customer sends a payment screenshot (needs the Worker and the WASMS_KEY secret).</p><label for="nadm">Your WhatsApp number</label><input id="nadm" value="'+esc(nd.adminPhone||"")+'" placeholder="923001234567"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nal"'+(nd.alertAdmin?' checked':'')+'> Alert me on new orders</label></div>'
  +'<div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
- +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div>';
+ +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div><div style="margin-top:16px"><button class="btn ghost sm" data-act="checkwa">Check setup</button></div><div id="chk"></div>';
 }
 async function notifyOrder(kind,id){
  const d=(await getDoc(doc(db,"orders",id))).data();
@@ -321,6 +321,15 @@ const ACT={
   const l=r.accounts||[];
   $("acl").innerHTML=l.length?l.map(a=>'<div class="row"><div><b>'+esc(a.phone||a.display_name||a.name||a.id)+'</b><small>'+esc(a.id)+'</small></div><button class="btn ghost sm" data-act="pickacc" data-id="'+esc(a.id)+'">Use</button></div>').join(""):'<p class="empty">No connected WhatsApp numbers found.</p>';
   msg("nm","");}),
+ checkwa:()=>run(async()=>{
+  const n=await getDoc(doc(db,"settings","notify")),nd=n.exists()?n.data():{},T=nd.templates||{};
+  const r=await callWA({action:"status"});
+  const li=(ok,t)=>'<div class="row"><span>'+(ok?'✅':'❌')+' '+t+'</span></div>';
+  let h='';
+  if(!r.ok)h=li(false,'Worker: '+esc(r.why));
+  else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)');
+  h+=li(!!(T.welcome&&T.welcome.on),'Welcome message switched on and saved')+li(!!(T.received&&T.received.on),'Order received message switched on and saved')+li(!!(nd.alertAdmin&&nd.adminPhone),'New order alert has your number and is on');
+  $("chk").innerHTML=h}),
  pickacc:id=>{$("nacc").value=id;$("acl").innerHTML=""},
  testwa:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number with country code.");const r=await sendWA(n,"Test message from Cheapanel admin ✅");msg("nm",r.ok?(r.unconfirmed?"Test request sent. Check your WhatsApp. This mode can’t confirm delivery.":"Test sent. Check WhatsApp."):r.why,r.ok)}),
  rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders();await notifyOrder("rejected",id)}),
