@@ -68,6 +68,7 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <div><a class="btn ghost sm" href="index.html">Back to shop</a> <a class="btn ghost sm" href="account.html">Account</a></div>
 </nav></header>
 <main class="wrap">
+<div id="boot" class="auth"><h1>Loading…</h1></div>
 <div id="gate" class="auth" hidden><h1>Log in to continue</h1><p class="sub">You need an account so we can match your payment to your order.</p><a class="btn" href="account.html" style="text-align:center">Log in or register</a><p class="alt">Come back to this page after logging in. Your cart is saved.</p></div>
 <div id="empty" class="auth" hidden><h1>Your cart is empty</h1><p class="sub">Pick a plan or diamonds first.</p><a class="btn" href="index.html" style="text-align:center">Go to the shop</a></div>
 <div id="done" class="auth" hidden><h1>Order received</h1><p class="sub">Thank you! We’ll check your payment and approve your order shortly. You can follow its status in your dashboard.</p><a class="btn" href="account.html" style="text-align:center">View my orders</a></div>
@@ -108,7 +109,7 @@ async function ping(body){
   await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(body)});
  }catch(e){}
 }
-function show(id){["gate","empty","done","main"].forEach(x=>$(x).hidden=x!==id)}
+function show(id){$("boot").hidden=true;["gate","empty","done","main"].forEach(x=>$(x).hidden=x!==id)}
 function drawItems(){
  $("items").innerHTML=CART.map((i,k)=>'<div class="row"><div><b>'+esc(i.n)+'</b><small>'+esc(i.x)+'</small></div><div>$'+money(i.p)+' <button class="btn ghost sm" data-k="'+k+'" aria-label="Remove item">Remove</button></div></div>').join("");
  $("total").textContent="$"+money(total());

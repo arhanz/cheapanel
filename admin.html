@@ -87,7 +87,8 @@ select.st{width:auto}
 <button class="btn ghost sm" id="out" hidden>Log out</button>
 </nav></header>
 <main class="wrap">
-<div id="gate" class="auth"><h1>Admin</h1><p class="sub">Owner access only.</p>
+<div id="boot" class="auth"><h1>Loading…</h1></div>
+<div id="gate" class="auth" hidden><h1>Admin</h1><p class="sub">Owner access only.</p>
 <label for="le">Email</label><input id="le" type="email" autocomplete="email">
 <label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password">
 <div class="msg" id="gm" role="alert"></div>
@@ -112,10 +113,10 @@ let U=[],P=[],L=[],note="";
 const run=f=>f().catch(e=>{pane.innerHTML='<p class="msg">Error: '+esc(e.code||e.message)+'</p>'});
 
 onAuthStateChanged(auth,async u=>{
- if(!u){$("gate").hidden=false;$("app").hidden=true;$("out").hidden=true;$("gm").textContent=note;return}
+ if(!u){$("boot").hidden=true;$("gate").hidden=false;$("app").hidden=true;$("out").hidden=true;$("gm").textContent=note;return}
  let ok=false;try{ok=(await getDoc(doc(db,"admins",u.uid))).exists()}catch(e){}
  if(!ok){note="This account is not an admin.";await signOut(auth);return}
- note="";$("gate").hidden=true;$("app").hidden=false;$("out").hidden=false;go("users");
+ note="";$("boot").hidden=true;$("gate").hidden=true;$("app").hidden=false;$("out").hidden=false;go("users");
 });
 $("lb").onclick=async()=>{note="";try{await signInWithEmailAndPassword(auth,$("le").value.trim(),$("lp").value)}catch(e){$("gm").textContent="Email or password is incorrect."}};
 $("lp").addEventListener("keydown",e=>{if(e.key==="Enter")$("lb").click()});
@@ -217,7 +218,7 @@ const normPh=s=>{let d=String(s||"").replace(/\D/g,"");if(d.startsWith("00"))d=d
 const UN={day:1,week:7,month:30,year:365};
 const daysOf=t=>{let n=0;String(t||"").replace(/(\d+)\s*(day|week|month|year)/gi,(m,a,u)=>{n+=+a*UN[u.toLowerCase()]});return n};
 const genKey=()=>"CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);
-const WAERR={NO_KEY:"Add your WaSMS API key in Settings first.",UNAUTHORIZED:"WaSMS rejected the API key. Check it.",INSUFFICIENT_SCOPE:"The API key needs the messages:send permission (and accounts:read to find the account ID).",WHATSAPP_NOT_CONNECTED:"Your WhatsApp number isn’t connected in WaSMS.",WHATSAPP_DISCONNECTED:"Your WhatsApp number is disconnected in WaSMS.",NO_CONNECTED_ACCOUNT:"No connected WhatsApp number found in WaSMS.",PLAN_LIMIT:"Your WaSMS plan limit is used up.",RATE_LIMITED:"Too many requests. Try again in a minute.",NOT_ADMIN:"This account isn’t an admin.",BAD_TOKEN:"Please log in again."};
+const WAERR={NO_KEY:"Add your WaSMS API key in Settings first.",UNAUTHORIZED:"WaSMS rejected the API key. Check it.",INSUFFICIENT_SCOPE:"The API key needs the messages:send permission (and accounts:read to find the account ID).",WHATSAPP_NOT_CONNECTED:"Your WhatsApp number isn’t connected in WaSMS.",WHATSAPP_DISCONNECTED:"Your WhatsApp number is disconnected in WaSMS.",NO_CONNECTED_ACCOUNT:"No connected WhatsApp number found in WaSMS.",PLAN_LIMIT:"Your WaSMS plan limit is used up.",RATE_LIMITED:"Too many requests. Try again in a minute.",NOT_ADMIN:"This account isn’t an admin.",BAD_TOKEN:"Please log in again.",NO_ENV_KEY:"The WASMS_KEY secret is missing in Cloudflare. Add it (type Secret, Production), then upload the zip again.",WELCOME_OFF:"The Welcome message isn’t switched on and saved. Tick Send automatically and tap Save.",NO_NUMBER:"That customer has no valid WhatsApp number.",MARK_FAILED:"Firestore blocked the update. Publish the latest firestore.rules."};
 const WB="https://wasms.net/api/public/v1";
 async function callWA(payload){
  const n=await getDoc(doc(db,"settings","notify"));const url=n.exists()?(n.data().workerUrl||""):"";
@@ -255,7 +256,7 @@ function drawNotify(nd,sd){
  +TPL.map(([k,t,d,auto])=>'<div class="mrow"><b>'+t+'</b><p class="empty" style="margin:2px 0 8px">'+d+'</p>'+(auto?'<label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="ton_'+k+'"'+((T[k]||{}).on?' checked':'')+'> Send automatically</label>':'')+'<textarea id="ttx_'+k+'" style="min-height:110px">'+esc((T[k]||{}).text||(k==="approved"?(nd.template||DEFT[k]):DEFT[k]))+'</textarea></div>').join("")
  +'<div class="mrow"><b>New order alert for you</b><p class="empty" style="margin:2px 0 8px">Get a WhatsApp message when a customer sends a payment screenshot (needs the Worker and the WASMS_KEY secret).</p><label for="nadm">Your WhatsApp number</label><input id="nadm" value="'+esc(nd.adminPhone||"")+'" placeholder="923001234567"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nal"'+(nd.alertAdmin?' checked':'')+'> Alert me on new orders</label></div>'
  +'<div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
- +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div><div style="margin-top:16px"><button class="btn ghost sm" data-act="checkwa">Check setup</button></div><div id="chk"></div>';
+ +'<label for="ntest" style="margin-top:18px">Send a test to this number</label><div class="inline"><input id="ntest" placeholder="923001234567"><button class="btn ghost" data-act="testwa">Send test</button></div><div style="margin-top:16px"><button class="btn ghost sm" data-act="checkwa">Check setup</button> <button class="btn ghost sm" data-act="testwel">Test welcome message</button></div><div id="chk"></div>';
 }
 async function notifyOrder(kind,id){
  const d=(await getDoc(doc(db,"orders",id))).data();
@@ -330,6 +331,7 @@ const ACT={
   else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)');
   h+=li(!!(T.welcome&&T.welcome.on),'Welcome message switched on and saved')+li(!!(T.received&&T.received.on),'Order received message switched on and saved')+li(!!(nd.alertAdmin&&nd.adminPhone),'New order alert has your number and is on');
   $("chk").innerHTML=h}),
+ testwel:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number in the test box first.");const r=await callWA({action:"welcometest",to:n});msg("nm",r.ok?"Welcome test sent. Check WhatsApp.":r.why,r.ok)}),
  pickacc:id=>{$("nacc").value=id;$("acl").innerHTML=""},
  testwa:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number with country code.");const r=await sendWA(n,"Test message from Cheapanel admin ✅");msg("nm",r.ok?(r.unconfirmed?"Test request sent. Check your WhatsApp. This mode can’t confirm delivery.":"Test sent. Check WhatsApp."):r.why,r.ok)}),
  rej:id=>run(async()=>{await updateDoc(doc(db,"orders",id),{status:"Rejected"});closeM();await vOrders();await notifyOrder("rejected",id)}),

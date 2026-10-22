@@ -58,14 +58,23 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 </nav></header>
 
 <main>
+<div class="auth" id="boot"><h1>Loading…</h1></div>
 <div class="view" id="v-login"><div class="auth">
 <h1>Log in</h1><p class="sub">Access your orders and panels.</p>
 <label for="le">Email</label><input id="le" type="email" autocomplete="email">
 <label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password">
 <div class="msg" id="lm" role="alert"></div>
 <button class="btn" id="lb">Log in</button>
-<div class="alt"><a href="#" id="fp">Forgot password?</a></div>
+<div class="alt"><a href="#forgot">Forgot password?</a></div>
 <div class="alt">New here? <a href="#register">Create an account</a></div>
+</div></div>
+
+<div class="view" id="v-forgot"><div class="auth">
+<h1>Reset password</h1><p class="sub">Enter your account email. We’ll send a code to your registered WhatsApp number.</p>
+<div id="fs1"><label for="fe">Email</label><input id="fe" type="email" autocomplete="email"><button class="btn" id="fb1" style="margin-top:6px">Send code</button></div>
+<div id="fs2" hidden><label for="fo">6-digit code</label><input id="fo" inputmode="numeric" maxlength="6" autocomplete="one-time-code"><button class="btn" id="fb2" style="margin-top:6px">Verify and send me the reset link</button></div>
+<div class="msg" id="fm" role="alert"></div>
+<div class="alt"><a href="#login">Back to log in</a></div>
 </div></div>
 
 <div class="view" id="v-register"><div class="auth">
@@ -131,6 +140,31 @@ async function ping(body){
   await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(body)});
  }catch(e){}
 }
+async function pub(body){
+ try{const n=await getDoc(doc(db,"settings","notify")),url=n.exists()?(n.data().workerUrl||""):"";if(!url)return {ok:false,error:"NO_WORKER"};
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return await r.json();
+ }catch(e){return {ok:false,error:"NETWORK"}}
+}
+const FERR={TOO_SOON:"Please wait a minute before asking for another code.",INVALID_CODE:"That code is wrong or has expired.",TOO_MANY:"Too many wrong attempts. Ask for a new code.",NO_WORKER:"Password reset isn’t available right now. Please contact support.",NETWORK:"Network error. Try again.",SVC_LOGIN_FAILED:"Password reset isn’t set up yet. Please contact support.",NO_ENV_KEY:"Password reset isn’t set up yet. Please contact support.",LINK_FAILED:"We couldn’t send the link. Try again or contact support."};
+let fEmail="";
+async function fSend(){
+ const e=$("fe").value.trim().toLowerCase();
+ if(!/^\S+@\S+\.\S+$/.test(e))return say("fm","Enter a valid email address.");
+ say("fm","Sending…",true);
+ const r=await pub({action:"otp_send",email:e});
+ if(!r.ok)return say("fm",FERR[r.error]||"Could not send the code ("+(r.error||"error")+").");
+ fEmail=e;$("fs1").hidden=true;$("fs2").hidden=false;
+ say("fm","If that email has an account, a 6-digit code was sent to its registered WhatsApp number. It expires in 10 minutes.",true);
+}
+async function fVerify(){
+ const c=$("fo").value.trim();
+ if(!/^\d{6}$/.test(c))return say("fm","Enter the 6-digit code.");
+ say("fm","Checking…",true);
+ const r=await pub({action:"otp_verify",email:fEmail,otp:c});
+ if(!r.ok)return say("fm",FERR[r.error]||"Could not verify ("+(r.error||"error")+").");
+ $("fs2").hidden=true;
+ say("fm","Done! We sent a password reset link to your registered WhatsApp number. Open it to choose a new password.",true);
+}
 async function register(){
  const n=$("rn").value.trim(),e=$("re").value.trim().toLowerCase(),w=$("rw").value.trim(),p=$("rp").value;
  if(n.length<3)return say("rm","Username must be at least 3 characters.");
@@ -189,12 +223,12 @@ async function redeem(){
  }catch(x){say("km",errText(x))}
 }
 function route(){
- if(!ready)return;
+ if(!ready)return;$("boot").hidden=true;
  let h=location.hash.slice(1)||"login";
  if(h==="dashboard"&&!user)h="login";
  if((h==="login"||h==="register")&&user)h="dashboard";
  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
- $(h==="dashboard"?"v-dash":h==="register"?"v-register":"v-login").classList.add("on");
+ $(h==="dashboard"?"v-dash":h==="register"?"v-register":h==="forgot"?"v-forgot":"v-login").classList.add("on");
  if(h==="dashboard")loadDash();
  window.scrollTo(0,0);
 }
@@ -203,7 +237,7 @@ else{
  onAuthStateChanged(auth,u=>{user=u;ready=true;route()});
  window.addEventListener("hashchange",route);
 }
-$("rb").onclick=register;$("lb").onclick=login;$("dbtn").onclick=order;$("kbtn").onclick=redeem;$("fp").onclick=forgot;
+$("rb").onclick=register;$("lb").onclick=login;$("dbtn").onclick=order;$("kbtn").onclick=redeem;$("fb1").onclick=fSend;$("fb2").onclick=fVerify;
 $("out").onclick=async()=>{await signOut(auth);location.hash="#login"};
 $("lp").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 $("rc").addEventListener("keydown",e=>{if(e.key==="Enter")register()});
