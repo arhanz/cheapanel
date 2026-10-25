@@ -168,7 +168,7 @@ async function vOrders(){
 }
 
 /* LICENSES */
-const MAX_DEVICES=3; /* how many devices can use one approved license */
+const MAX_DEVICES=0; /* how many devices can use one approved license */
 const licFields=(o)=>({plan:o.plan,assignedTo:o.uid,email:o.email||"",orderId:o.orderId,created:o.now,redeemedAt:o.now,days:o.days,expiresAt:o.days?o.now+o.days*864e5:null,multiUse:true,maxUses:MAX_DEVICES,uses:0,users:[]});
 const AL="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const rnd=n=>Array.from(crypto.getRandomValues(new Uint32Array(n)),x=>AL[x%AL.length]).join("");
