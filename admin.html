@@ -168,11 +168,12 @@ async function vOrders(){
 }
 
 /* LICENSES */
-const MAX_DEVICES=0; /* how many devices can use one approved license */
-const licFields=(o)=>({plan:o.plan,assignedTo:o.uid,email:o.email||"",orderId:o.orderId,created:o.now,redeemedAt:o.now,days:o.days,expiresAt:o.days?o.now+o.days*864e5:null,multiUse:true,maxUses:MAX_DEVICES,uses:0,users:[]});
+const MAX_DEVICES=2; /* fallback when a plan has no device limit set (0 = unlimited) */
+const maxFor=(name,ps)=>{const n=String(name||"").toLowerCase();const m=ps.filter(p=>p.name&&n.includes(String(p.name).toLowerCase()));const g=m.find(p=>n.includes(String(p.game||"").toLowerCase()))||m[0];return g&&g.maxDevices!==undefined?+g.maxDevices:MAX_DEVICES};
+const licFields=(o)=>({plan:o.plan,assignedTo:o.uid,email:o.email||"",orderId:o.orderId,created:o.now,redeemedAt:o.now,days:o.days,expiresAt:o.days?o.now+o.days*864e5:null,multiUse:true,maxUses:o.max===undefined?MAX_DEVICES:o.max,uses:0,users:[]});
 const AL="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const rnd=n=>Array.from(crypto.getRandomValues(new Uint32Array(n)),x=>AL[x%AL.length]).join("");
-function drawL(){$("ll").innerHTML=L.length?L.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan)+' · '+(k.assignedTo?'used by '+esc(k.assignedTo):'unused')+(k.multiUse?' · devices '+esc(k.uses||0)+'/'+esc(k.maxUses):'')+'</small></div><button class="btn ghost sm" data-act="delk" data-id="'+esc(k.key)+'">Delete</button></div>').join(""):'<p class="empty">No keys yet.</p>';$("lc").textContent=L.length}
+function drawL(){$("ll").innerHTML=L.length?L.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan)+' · '+(k.assignedTo?'used by '+esc(k.assignedTo):'unused')+(k.multiUse?' · devices '+esc(k.uses||0)+'/'+(k.maxUses?esc(k.maxUses):'∞'):'')+'</small></div><button class="btn ghost sm" data-act="delk" data-id="'+esc(k.key)+'">Delete</button></div>').join(""):'<p class="empty">No keys yet.</p>';$("lc").textContent=L.length}
 async function vLic(){
  const s=await getDocs(collection(db,"licenses"));
  L=s.docs.map(d=>({key:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));
@@ -189,11 +190,11 @@ async function vProd(){
  const s=await getDocs(collection(db,"products"));
  P=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
  pane.innerHTML='<div class="ph"><h2>Plans ('+P.length+')</h2><div><button class="btn sm" data-act="addp">+ Add plan</button>'+(P.length?' <button class="btn ghost sm" data-act="feat">Apply default features to all</button>':' <button class="btn ghost sm" data-act="seed">Import default plans</button>')+'</div></div>'
- +(P.length?'<div class="panel scroll"><table class="tbl"><thead><tr><th>Game</th><th>Plan</th><th>Original</th><th>Discount</th><th>Final price</th><th>Status</th><th></th></tr></thead><tbody>'+P.map(p=>'<tr><td>'+esc(p.game)+'</td><td><b>'+esc(p.name)+'</b><small>'+esc(p.bonus)+'</small></td><td>$'+esc(baseOf(p))+'</td><td>'+(discOf(p)>0?discOf(p)+'%':'-')+'</td><td><b>$'+esc(p.price)+'</b><small>'+esc(p.per)+'</small></td><td><button class="pill '+(p.active===false?'off':'on')+'" data-act="tog" data-id="'+esc(p.id)+'">'+(p.active===false?'Hidden':'Live')+'</button></td><td class="acts"><button class="btn ghost sm" data-act="editp" data-id="'+esc(p.id)+'">Edit</button> <button class="btn ghost sm dng" data-act="delp" data-id="'+esc(p.id)+'">Delete</button></td></tr>').join("")+'</tbody></table></div>':'<div class="panel"><p class="empty">Your shop is using the built-in default plans. Import them to edit prices and add discounts.</p></div>');
+ +(P.length?'<div class="panel scroll"><table class="tbl"><thead><tr><th>Game</th><th>Plan</th><th>Original</th><th>Discount</th><th>Final price</th><th>Devices</th><th>Status</th><th></th></tr></thead><tbody>'+P.map(p=>'<tr><td>'+esc(p.game)+'</td><td><b>'+esc(p.name)+'</b><small>'+esc(p.bonus)+'</small></td><td>$'+esc(baseOf(p))+'</td><td>'+(discOf(p)>0?discOf(p)+'%':'-')+'</td><td><b>$'+esc(p.price)+'</b><small>'+esc(p.per)+'</small></td><td>'+(p.maxDevices===undefined?MAX_DEVICES:(p.maxDevices||'∞'))+'</td><td><button class="pill '+(p.active===false?'off':'on')+'" data-act="tog" data-id="'+esc(p.id)+'">'+(p.active===false?'Hidden':'Live')+'</button></td><td class="acts"><button class="btn ghost sm" data-act="editp" data-id="'+esc(p.id)+'">Edit</button> <button class="btn ghost sm dng" data-act="delp" data-id="'+esc(p.id)+'">Delete</button></td></tr>').join("")+'</tbody></table></div>':'<div class="panel"><p class="empty">Your shop is using the built-in default plans. Import them to edit prices and add discounts.</p></div>');
 }
 function formP(p){
  p=p||{};
- openM('<h2>'+(p.id?'Edit plan':'Add plan')+'</h2><input type="hidden" id="pid" value="'+esc(p.id||"")+'"><div class="grid2"><div><label for="pgame">Game</label><select id="pgame"><option value="ff"'+(p.cat==="pubg"?'':' selected')+'>Free Fire</option><option value="pubg"'+(p.cat==="pubg"?' selected':'')+'>PUBG Mobile</option></select></div><div><label for="pname">Plan name</label><input id="pname" value="'+esc(p.name||"")+'" placeholder="Aimbot Panel – 1 Week"></div><div><label for="pprice">Original price (USD)</label><input id="pprice" type="number" step="0.01" value="'+esc(p.id?baseOf(p):"")+'"></div><div><label for="pdisc">Discount % (0 = none)</label><input id="pdisc" type="number" min="0" max="95" value="'+esc(p.id?discOf(p):0)+'"></div><div><label for="pper">Period label</label><input id="pper" value="'+esc(p.per||"")+'" placeholder="/ week"></div><div><label for="pbonus">Bonus badge</label><input id="pbonus" value="'+esc(p.bonus||"")+'" placeholder="+ 3 days free"></div><div><label for="porder">Sort order</label><input id="porder" type="number" value="'+esc(p.order||0)+'"></div></div><div class="prev" id="pprev"></div><label for="pfeats">Features (one per line)</label><textarea id="pfeats">'+esc((p.feats||FE).join("\n"))+'</textarea><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pact"'+(p.active===false?'':' checked')+'> Show in shop</label><div class="msg" id="pm"></div><div class="inline"><button class="btn" data-act="savep">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
+ openM('<h2>'+(p.id?'Edit plan':'Add plan')+'</h2><input type="hidden" id="pid" value="'+esc(p.id||"")+'"><div class="grid2"><div><label for="pgame">Game</label><select id="pgame"><option value="ff"'+(p.cat==="pubg"?'':' selected')+'>Free Fire</option><option value="pubg"'+(p.cat==="pubg"?' selected':'')+'>PUBG Mobile</option></select></div><div><label for="pname">Plan name</label><input id="pname" value="'+esc(p.name||"")+'" placeholder="Aimbot Panel – 1 Week"></div><div><label for="pprice">Original price (USD)</label><input id="pprice" type="number" step="0.01" value="'+esc(p.id?baseOf(p):"")+'"></div><div><label for="pdisc">Discount % (0 = none)</label><input id="pdisc" type="number" min="0" max="95" value="'+esc(p.id?discOf(p):0)+'"></div><div><label for="pper">Period label</label><input id="pper" value="'+esc(p.per||"")+'" placeholder="/ week"></div><div><label for="pbonus">Bonus badge</label><input id="pbonus" value="'+esc(p.bonus||"")+'" placeholder="+ 3 days free"></div><div><label for="porder">Sort order</label><input id="porder" type="number" value="'+esc(p.order||0)+'"></div><div><label for="pmax">Max devices (0 = unlimited)</label><input id="pmax" type="number" min="0" value="'+esc(p.maxDevices===undefined?MAX_DEVICES:p.maxDevices)+'"></div></div><div class="prev" id="pprev"></div><label for="pfeats">Features (one per line)</label><textarea id="pfeats">'+esc((p.feats||FE).join("\n"))+'</textarea><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pact"'+(p.active===false?'':' checked')+'> Show in shop</label><div class="msg" id="pm"></div><div class="inline"><button class="btn" data-act="savep">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
  const pv=()=>{const b=+$("pprice").value,d=+$("pdisc").value||0;$("pprev").textContent=b>0?(d>0?'Shop shows: $'+b+' crossed out, final $'+(+(b*(1-d/100)).toFixed(2))+' with a '+d+'% OFF badge':'Shop shows: $'+b):''};
  $("pprice").oninput=pv;$("pdisc").oninput=pv;pv();
 }
@@ -292,11 +293,12 @@ const ACT={
   const items=d.items||[{n:d.item,p:d.price,x:""}];
   let keys=d.keys||[];const lines=[];
   if(!d.keysIssued){
+   const PS=(await getDocs(collection(db,"products"))).docs.map(x=>x.data());
    for(const it of items){
     if(/diamond/i.test(it.n))continue;
     let key;do{key=genKey()}while((await getDoc(doc(db,"licenses",key))).exists());
     const dy=daysOf(it.n)+daysOf(it.x),now=Date.now();
-    await setDoc(doc(db,"licenses",key),licFields({plan:it.n,uid:d.uid,email:d.email,orderId:id,now,days:dy}));
+    await setDoc(doc(db,"licenses",key),licFields({plan:it.n,uid:d.uid,email:d.email,orderId:id,now,days:dy,max:maxFor(it.n,PS)}));
     keys.push({plan:it.n,key,days:dy});
    }
    await updateDoc(doc(db,"orders",id),{status:"Paid",keys,keysIssued:true});
@@ -358,7 +360,7 @@ const ACT={
   if(!plan)return msg("lmg","Enter a plan name.");
   const out=[];for(let i=0;i<n;i++){const key="CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);await setDoc(doc(db,"licenses",key),{plan,assignedTo:null,created:Date.now()});out.push(key);L.unshift({key,plan,assignedTo:null,created:Date.now()})}
   $("lout").value=out.join("\n");msg("lmg",n+" key(s) created. Copy them and send to the customer.",true);drawL()}),
- fixlic:()=>{if(!confirm("Add the device fields to every assigned license that is missing them?"))return;run(async()=>{let n=0;for(const k of L){if(k.assignedTo&&k.multiUse===undefined){await updateDoc(doc(db,"licenses",k.key),{multiUse:true,maxUses:MAX_DEVICES,uses:0,users:[]});n++}}await vLic();alert(n+" license(s) updated.")})},
+ fixlic:()=>{if(!confirm("Add the device fields to every assigned license that is missing them?"))return;run(async()=>{const PS=(await getDocs(collection(db,"products"))).docs.map(x=>x.data());let n=0;for(const k of L){if(k.assignedTo&&k.multiUse===undefined){await updateDoc(doc(db,"licenses",k.key),{multiUse:true,maxUses:maxFor(k.plan,PS),uses:0,users:[]});n++}}await vLic();alert(n+" license(s) updated.")})},
  delk:id=>{if(!confirm("Delete this key?"))return;run(async()=>{await deleteDoc(doc(db,"licenses",id));L=L.filter(k=>k.key!==id);drawL()})},
  delp:id=>{if(!confirm("Delete this plan?"))return;run(async()=>{await deleteDoc(doc(db,"products",id));await vProd()})},
  seed:()=>run(async()=>{let i=0;for(const [cat,game] of [["ff","Free Fire"],["pubg","PUBG Mobile"]])for(const p of PL){await setDoc(doc(collection(db,"products")),{cat,game,name:"Aimbot Panel – "+p[0],price:p[1],per:p[2],bonus:p[3],old:p[4],save:p[5],feats:FE,order:i++,active:true})}await vProd()}),
@@ -367,7 +369,7 @@ const ACT={
   if(!name||!(base>0))return msg("pm","Enter a plan name and a price.");
   const price=disc>0?+(base*(1-disc/100)).toFixed(2):base;
   const cat=$("pgame").value,id=$("pid").value||doc(collection(db,"products")).id;
-  await setDoc(doc(db,"products",id),{cat,game:cat==="ff"?"Free Fire":"PUBG Mobile",name,base,disc,price,old:disc>0?base:"",save:disc>0?disc+"% OFF":"",per:$("pper").value.trim(),bonus:$("pbonus").value.trim(),feats:$("pfeats").value.split("\n").map(x=>x.trim()).filter(Boolean),order:+$("porder").value||0,active:$("pact").checked});
+  await setDoc(doc(db,"products",id),{cat,game:cat==="ff"?"Free Fire":"PUBG Mobile",name,base,disc,price,old:disc>0?base:"",save:disc>0?disc+"% OFF":"",per:$("pper").value.trim(),bonus:$("pbonus").value.trim(),feats:$("pfeats").value.split("\n").map(x=>x.trim()).filter(Boolean),order:+$("porder").value||0,maxDevices:$("pmax").value===""?MAX_DEVICES:Math.max(0,Math.floor(+$("pmax").value)||0),active:$("pact").checked});
   closeM();await vProd()}),
  saves:()=>run(async()=>{
   const d={usd495:+$("s1").value,min:Math.floor(+$("s2").value),step:Math.floor(+$("s3").value),bulkAt:Math.floor(+$("s4").value),bulkPct:+$("s5").value};
