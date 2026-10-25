@@ -168,13 +168,15 @@ async function vOrders(){
 }
 
 /* LICENSES */
+const MAX_DEVICES=3; /* how many devices can use one approved license */
+const licFields=(o)=>({plan:o.plan,assignedTo:o.uid,email:o.email||"",orderId:o.orderId,created:o.now,redeemedAt:o.now,days:o.days,expiresAt:o.days?o.now+o.days*864e5:null,multiUse:true,maxUses:MAX_DEVICES,uses:0,users:[]});
 const AL="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const rnd=n=>Array.from(crypto.getRandomValues(new Uint32Array(n)),x=>AL[x%AL.length]).join("");
-function drawL(){$("ll").innerHTML=L.length?L.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan)+' · '+(k.assignedTo?'used by '+esc(k.assignedTo):'unused')+'</small></div><button class="btn ghost sm" data-act="delk" data-id="'+esc(k.key)+'">Delete</button></div>').join(""):'<p class="empty">No keys yet.</p>';$("lc").textContent=L.length}
+function drawL(){$("ll").innerHTML=L.length?L.map(k=>'<div class="row"><div><code>'+esc(k.key)+'</code><small>'+esc(k.plan)+' · '+(k.assignedTo?'used by '+esc(k.assignedTo):'unused')+(k.multiUse?' · devices '+esc(k.uses||0)+'/'+esc(k.maxUses):'')+'</small></div><button class="btn ghost sm" data-act="delk" data-id="'+esc(k.key)+'">Delete</button></div>').join(""):'<p class="empty">No keys yet.</p>';$("lc").textContent=L.length}
 async function vLic(){
  const s=await getDocs(collection(db,"licenses"));
  L=s.docs.map(d=>({key:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));
- pane.innerHTML='<div class="panel"><h2>Generate keys</h2><div class="grid2"><div><label for="lpn">Plan name</label><input id="lpn" placeholder="Free Fire - 1 Week"></div><div><label for="lqty">How many (1-50)</label><input id="lqty" type="number" min="1" max="50" value="1"></div></div><div class="msg" id="lmg"></div><button class="btn" data-act="gen">Generate</button><textarea id="lout" readonly placeholder="New keys appear here" aria-label="New keys" style="margin-top:12px"></textarea></div><div class="panel"><h2>All keys (<span id="lc"></span>)</h2><div id="ll"></div></div>';
+ pane.innerHTML='<div class="panel"><h2>Generate keys</h2><div class="grid2"><div><label for="lpn">Plan name</label><input id="lpn" placeholder="Free Fire - 1 Week"></div><div><label for="lqty">How many (1-50)</label><input id="lqty" type="number" min="1" max="50" value="1"></div></div><div class="msg" id="lmg"></div><button class="btn" data-act="gen">Generate</button><textarea id="lout" readonly placeholder="New keys appear here" aria-label="New keys" style="margin-top:12px"></textarea></div><div class="panel"><h2>All keys (<span id="lc"></span>)</h2><p class="empty">Older approved licenses are missing the device fields. <button class="btn ghost sm" data-act="fixlic">Update old licenses</button></p><div id="ll"></div></div>';
  drawL();
 }
 
@@ -294,7 +296,7 @@ const ACT={
     if(/diamond/i.test(it.n))continue;
     let key;do{key=genKey()}while((await getDoc(doc(db,"licenses",key))).exists());
     const dy=daysOf(it.n)+daysOf(it.x),now=Date.now();
-    await setDoc(doc(db,"licenses",key),{plan:it.n,assignedTo:d.uid,orderId:id,created:now,redeemedAt:now,days:dy,expiresAt:dy?now+dy*864e5:null});
+    await setDoc(doc(db,"licenses",key),licFields({plan:it.n,uid:d.uid,email:d.email,orderId:id,now,days:dy}));
     keys.push({plan:it.n,key,days:dy});
    }
    await updateDoc(doc(db,"orders",id),{status:"Paid",keys,keysIssued:true});
@@ -356,6 +358,7 @@ const ACT={
   if(!plan)return msg("lmg","Enter a plan name.");
   const out=[];for(let i=0;i<n;i++){const key="CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);await setDoc(doc(db,"licenses",key),{plan,assignedTo:null,created:Date.now()});out.push(key);L.unshift({key,plan,assignedTo:null,created:Date.now()})}
   $("lout").value=out.join("\n");msg("lmg",n+" key(s) created. Copy them and send to the customer.",true);drawL()}),
+ fixlic:()=>{if(!confirm("Add the device fields to every assigned license that is missing them?"))return;run(async()=>{let n=0;for(const k of L){if(k.assignedTo&&k.multiUse===undefined){await updateDoc(doc(db,"licenses",k.key),{multiUse:true,maxUses:MAX_DEVICES,uses:0,users:[]});n++}}await vLic();alert(n+" license(s) updated.")})},
  delk:id=>{if(!confirm("Delete this key?"))return;run(async()=>{await deleteDoc(doc(db,"licenses",id));L=L.filter(k=>k.key!==id);drawL()})},
  delp:id=>{if(!confirm("Delete this plan?"))return;run(async()=>{await deleteDoc(doc(db,"products",id));await vProd()})},
  seed:()=>run(async()=>{let i=0;for(const [cat,game] of [["ff","Free Fire"],["pubg","PUBG Mobile"]])for(const p of PL){await setDoc(doc(collection(db,"products")),{cat,game,name:"Aimbot Panel – "+p[0],price:p[1],per:p[2],bonus:p[3],old:p[4],save:p[5],feats:FE,order:i++,active:true})}await vProd()}),
