@@ -21,6 +21,11 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
 .btn.ghost:hover{border-color:var(--acc);color:var(--acc);background:transparent}
 .btn.sm{padding:6px 14px}
+.is-loading{position:relative;color:transparent!important;pointer-events:none;cursor:progress}
+.is-loading::after{content:"";position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite}
+.btn.ghost.is-loading::after,.pill.is-loading::after,select.is-loading::after{border-color:var(--line);border-top-color:var(--acc)}
+select.is-loading{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
 .view{display:none}.view.on{display:block}
 .auth{max-width:420px;margin:56px auto;padding:0 20px}
 .auth h1{font-size:48px;margin-bottom:8px}
@@ -110,7 +115,9 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const D=t=>t?new Date(t).toLocaleString():"-";
 const STAT=["Pending payment","Paid","Delivered","Rejected","Cancelled"];
 let U=[],P=[],L=[],note="";
-const run=f=>f().catch(e=>{pane.innerHTML='<p class="msg">Error: '+esc(e.code||e.message)+'</p>'});
+let cur=null; /* the button that was just clicked */
+const busy=(el,on)=>{if(!el)return;el.classList.toggle("is-loading",on);if(el.tagName==="BUTTON"||el.tagName==="SELECT")el.disabled=on;el.setAttribute("aria-busy",on)};
+const run=f=>{const el=cur;cur=null;busy(el,true);return f().catch(e=>{pane.innerHTML='<p class="msg">Error: '+esc(e.code||e.message)+'</p>'}).finally(()=>busy(el,false))};
 
 onAuthStateChanged(auth,async u=>{
  if(!u){$("boot").hidden=true;$("gate").hidden=false;$("app").hidden=true;$("out").hidden=true;$("gm").textContent=note;return}
@@ -118,7 +125,7 @@ onAuthStateChanged(auth,async u=>{
  if(!ok){note="This account is not an admin.";await signOut(auth);return}
  note="";$("boot").hidden=true;$("gate").hidden=true;$("app").hidden=false;$("out").hidden=false;go("users");
 });
-$("lb").onclick=async()=>{note="";try{await signInWithEmailAndPassword(auth,$("le").value.trim(),$("lp").value)}catch(e){$("gm").textContent="Email or password is incorrect."}};
+$("lb").onclick=async()=>{note="";const b=$("lb");busy(b,true);try{await signInWithEmailAndPassword(auth,$("le").value.trim(),$("lp").value)}catch(e){$("gm").textContent="Email or password is incorrect."}finally{busy(b,false)}};
 $("lp").addEventListener("keydown",e=>{if(e.key==="Enter")$("lb").click()});
 $("out").onclick=()=>signOut(auth);
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -376,8 +383,8 @@ const ACT={
   if(!(d.usd495>0)||!(d.min>0)||!(d.step>0)||!(d.bulkAt>0)||d.bulkPct<0||d.bulkPct>90)return msg("sm","Check the values. All numbers must be positive.");
   await setDoc(doc(db,"settings","diamonds"),d);msg("sm","Saved. The shop uses these prices now.",true)})
 };
-document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.tagName==="SELECT")return;const f=ACT[b.dataset.act];if(f)f(b.dataset.id)});
-document.addEventListener("change",e=>{const s=e.target;if(s.dataset&&s.dataset.act==="st")run(async()=>{await updateDoc(doc(db,"orders",s.dataset.id),{status:s.value});if(s.value==="Delivered")await notifyOrder("delivered",s.dataset.id);if(s.value==="Rejected")await notifyOrder("rejected",s.dataset.id)})});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.tagName==="SELECT")return;const f=ACT[b.dataset.act];if(f){cur=b;try{f(b.dataset.id)}finally{cur=null}}});
+document.addEventListener("change",e=>{const s=e.target;if(s.dataset&&s.dataset.act==="st"){cur=s;run(async()=>{await updateDoc(doc(db,"orders",s.dataset.id),{status:s.value});if(s.value==="Delivered")await notifyOrder("delivered",s.dataset.id);if(s.value==="Rejected")await notifyOrder("rejected",s.dataset.id)})}});
 </script>
 </body>
 </html>
