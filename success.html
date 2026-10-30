@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cheapanel – Payment received</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#ffffff;--card:#f6f6f6;--line:#e2e2e2;--text:#111111;--mute:#666666;--acc:#ff4d1a;--acc2:#d63a0a;--err:#dc2626;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Rajdhani','Segoe UI',Arial,sans-serif;font-size:18px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;line-height:1.05;margin:0}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-family:'Anton',Impact,sans-serif;font-size:26px}.logo b{color:var(--acc);font-weight:400}
+.btn{display:inline-block;background:var(--acc);color:#000;font:inherit;font-weight:700;padding:12px 24px;border-radius:4px;border:0;cursor:pointer}
+.btn:hover{background:var(--acc2);color:#fff}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--acc);color:var(--acc);background:transparent}
+.btn.sm{padding:6px 14px}
+.view{display:none}.view.on{display:block}
+.auth{max-width:420px;margin:56px auto;padding:0 20px}
+.auth h1{font-size:48px;margin-bottom:8px}
+.auth p.sub{color:var(--mute);margin:0 0 24px}
+label{display:block;font-weight:700;margin:16px 0 6px}
+input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:4px;font:inherit}
+input:focus,select:focus{border-color:var(--acc);outline:none}
+.msg{min-height:24px;margin:12px 0;color:var(--err);font-weight:600}
+.msg.ok{color:var(--ok)}
+.auth .btn{width:100%;margin-top:6px}
+.alt{text-align:center;color:var(--mute);margin-top:18px}.alt a{color:var(--acc);font-weight:700}
+.dash{padding:36px 0 60px}
+.dash h1{font-size:clamp(34px,6vw,52px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:26px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px}
+.stat span{color:var(--mute)}.stat b{display:block;font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:38px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:18px}
+.panel h2{font-size:26px;margin-bottom:14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.row small{color:var(--mute);display:block}
+code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
+.empty{color:var(--mute)}
+.tag{font-weight:700;color:var(--acc2)}
+.inline{display:flex;gap:8px}.inline input{flex:1}.inline .btn{width:auto;margin:0}
+@media(max-width:720px){.cols{grid-template-columns:1fr}}
+.panel,.stat{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+
+[hidden]{display:none!important}
+.keybox{border:1px solid var(--line);border-radius:6px;padding:12px;margin:10px 0;text-align:left}
+.keybox code{font-size:18px}
+</style>
+</head>
+<body>
+<header class="wrap"><nav><a class="logo" href="index.html">CHEA<b>PANEL</b></a><a class="btn ghost sm" href="account.html">My account</a></nav></header>
+<main class="wrap">
+<div class="auth" id="boot"><h1>Loading…</h1></div>
+<div class="auth" id="gate" hidden><h1>Log in to see your order</h1><p class="sub">Log in with the account you used to pay.</p><a class="btn" href="account.html" style="text-align:center">Log in</a></div>
+<div class="auth" id="nf" hidden><h1>Order not found</h1><p class="sub">We couldn’t find that order on your account.</p><a class="btn" href="account.html" style="text-align:center">My orders</a></div>
+<div class="auth" id="wait" hidden><h1>Confirming your payment…</h1><p class="sub" id="wsub">Crypto payments need a few network confirmations. This page updates by itself. You can also close it: we’ll message you on WhatsApp as soon as it’s confirmed.</p><a class="btn ghost" href="account.html" style="text-align:center">Go to my account</a></div>
+<div class="auth" id="ok" hidden><h1>Payment received</h1><p class="sub" id="oksub">Thank you! Your order is approved.</p><div id="keys"></div><a class="btn" href="account.html" style="text-align:center">Go to my account</a></div>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,getDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
+const db=getFirestore(initializeApp(cfg)),auth=getAuth();
+const $=i=>document.getElementById(i);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const oid=(new URLSearchParams(location.search).get("order")||"").replace(/[^\w-]/g,"");
+const show=id=>{["boot","gate","wait","ok","nf"].forEach(x=>{const e=$(x);if(e)e.hidden=x!==id})};
+
+let tries=0;
+async function check(u){
+ const s=await getDoc(doc(db,"orders",oid)).catch(()=>null);
+ if(!s||!s.exists()||s.data().uid!==u.uid)return show("nf");
+ const o=s.data();
+ if(o.status==="Paid"||o.status==="Delivered"){
+  try{localStorage.removeItem("cp_cart")}catch(e){}
+  const ks=(o.keys||[]).map(k=>'<div class="keybox"><b>'+esc(k.plan)+'</b><br><code>'+esc(k.key)+'</code>'+(k.days?'<small> · valid for '+esc(k.days)+' days</small>':'')+'</div>').join("");
+  const dia=(o.items||[]).some(i=>/diamond/i.test(i.n));
+  $("keys").innerHTML=ks+(dia?'<p class="sub">Your diamonds are being topped up to Player ID <b>'+esc(o.pid)+'</b>. We’ll message you when it’s done.</p>':'');
+  if(ks)$("oksub").textContent="Thank you! Your license key is below, and it was also sent to your WhatsApp.";
+  return show("ok");
+ }
+ if(o.status==="Payment failed"){location.replace("failed.html?order="+oid);return}
+ show("wait");
+ if(++tries<100)setTimeout(()=>check(u),3000);
+ else $("wsub").textContent="Still confirming. Blockchain payments can take a little longer. You don’t need to stay here: we’ll message you on WhatsApp once it’s confirmed.";
+}
+onAuthStateChanged(auth,u=>{if(!u)return show("gate");if(!oid)return show("nf");check(u)});
+</script>
+</body>
+</html>

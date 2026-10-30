@@ -101,7 +101,7 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <div class="cols">
 <div class="panel"><h2>Order diamonds</h2>
 <label for="dg" style="margin-top:0">Pack</label>
-<select id="dg"><option value="495|2.41">495 diamonds – $2.41</option><option value="990|4.83">990 diamonds – $4.83</option><option value="2475|12.07">2475 diamonds – $12.07</option><option value="10000|43.89">10,000 diamonds – $43.89 (10% off)</option></select>
+<select id="dg"><option value="">Loading…</option></select><!-- old static packs removed -->
 <label for="dp">Free Fire player ID</label><input id="dp" inputmode="numeric">
 <div class="msg" id="dm" role="alert"></div>
 <button class="btn" id="dbtn" style="width:100%">Continue to payment</button></div>
@@ -200,13 +200,14 @@ function paint(){
  $("since").textContent="Member since "+new Date(prof.joined).toLocaleDateString();
  $("sBal").textContent="$"+prof.balance;$("sKeys").textContent=keys.filter(k=>!k.expiresAt||k.expiresAt>Date.now()).length;$("sOrd").textContent=orders.length;
  $("keys").innerHTML=keys.length?keys.map(k=>{const left=k.expiresAt?Math.ceil((k.expiresAt-Date.now())/864e5):null,st=left===null?"Active":left>0?left+" days left":"Expired";return '<div class="row"><div><b>'+esc(k.plan||"Panel")+'</b><br><code>'+esc(k.key)+'</code><small>'+esc(st)+(k.multiUse?' · Devices '+esc(k.uses||0)+'/'+(k.maxUses?esc(k.maxUses):'∞'):'')+'</small></div><button class="btn ghost sm" data-copy="'+esc(k.key)+'">Copy</button></div>'}).join(""):'<p class="empty">No panels yet. Buy one in the shop, then redeem the key we send you.</p>';
- $("orders").innerHTML=orders.length?orders.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b><small>'+(o.pid?'Player ID '+esc(o.pid)+' · ':'')+new Date(o.date).toLocaleString()+'</small></div><div><span class="tag">$'+o.price+'</span> · '+esc(o.status)+'</div></div>').join(""):'<p class="empty">No orders yet. Your diamond orders will show up here.</p>';
+ $("orders").innerHTML=orders.length?orders.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b><small>'+(o.pid?'Player ID '+esc(o.pid)+' · ':'')+new Date(o.date).toLocaleString()+'</small></div><div><span class="tag">$'+o.price+'</span> · '+esc(o.status)+(o.plisioUrl&&o.status==='Awaiting crypto payment'?' · <a href="'+esc(o.plisioUrl)+'" target="_blank" rel="noopener" style="color:var(--acc);font-weight:700">Complete payment</a>':'')+'</div></div>').join(""):'<p class="empty">No orders yet. Your diamond orders will show up here.</p>';
  $("prof").innerHTML='<div class="row"><span>Username</span><b>'+esc(prof.name)+'</b></div><div class="row"><span>Email</span><b>'+esc(prof.email)+'</b></div><div class="row"><span>WhatsApp</span><b>'+esc(prof.whatsapp)+'</b></div>';
  const h=$("help");h.href=wa("Hi, I need help with my account ("+prof.email+")");h.target="_blank";h.rel="noopener";
 }
 async function order(){
  const p=$("dp").value.trim(),v=$("dg").value.split("|");
  if(!/^\d{6,12}$/.test(p))return say("dm","Enter a valid player ID (digits only).");
+ if(!v[1])return say("dm","Prices didn’t load. Please refresh the page.");
  let c=[];try{c=JSON.parse(localStorage.getItem("cp_cart")||"[]")}catch(e){}
  c.push({n:v[0]+" diamonds",p:+v[1],x:"",pid:p});
  try{localStorage.setItem("cp_cart",JSON.stringify(c))}catch(e){}
@@ -243,6 +244,13 @@ $("lp").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 $("rc").addEventListener("keydown",e=>{if(e.key==="Enter")register()});
 document.addEventListener("click",e=>{const c=e.target.dataset&&e.target.dataset.copy;if(c){try{navigator.clipboard.writeText(c);e.target.textContent="Copied"}catch(x){}}});
 $("shopLink").href="index.html";
+async function loadPacks(){
+ try{const s=await getDoc(doc(db,"settings","diamonds"));const d=Object.assign({usd495:2.6,min:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
+  const qs=[d.min,d.min*2,d.min*5,d.bulkAt].filter((q,i,a)=>q>0&&a.indexOf(q)===i).sort((a,b)=>a-b);
+  $("dg").innerHTML=qs.map(q=>{let p=q*d.usd495/495;if(q>=d.bulkAt)p*=1-d.bulkPct/100;p=+p.toFixed(2);return '<option value="'+q+'|'+p+'">'+q.toLocaleString("en-US")+' diamonds – $'+p.toFixed(2)+(q>=d.bulkAt?' ('+d.bulkPct+'% off)':'')+'</option>'}).join("");
+ }catch(e){}
+}
+loadPacks();
 </script>
 </body>
 </html>

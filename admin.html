@@ -113,7 +113,7 @@ const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
 const $=i=>document.getElementById(i),pane=$("pane");
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const D=t=>t?new Date(t).toLocaleString():"-";
-const STAT=["Pending payment","Paid","Delivered","Rejected","Cancelled"];
+const STAT=["Pending payment","Awaiting crypto payment","Paid","Delivered","Rejected","Payment failed","Cancelled"];
 let U=[],P=[],L=[],note="";
 let cur=null; /* the button that was just clicked */
 const busy=(el,on)=>{if(!el)return;el.classList.toggle("is-loading",on);if(el.tagName==="BUTTON"||el.tagName==="SELECT")el.disabled=on;el.setAttribute("aria-busy",on)};
@@ -171,7 +171,7 @@ async function vOrders(){
  const s=await getDocs(collection(db,"orders"));
  const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date-a.date);
  const open=os.filter(o=>o.status==="Pending payment").length;
- pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+(o.pid?' · Player ID '+esc(o.pid):'')+' · '+D(o.date)+(o.promo?' · Promo '+esc(o.promo)+' (−$'+esc(o.discount||0)+')':'')+(o.hasProof?' · <b class="tag">Proof sent</b>':'')+'</small></div><div class="acts">'+(o.hasProof?'<button class="btn ghost sm" data-act="proof" data-id="'+esc(o.id)+'">Review</button> ':'')+'<select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
+ pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+(o.pid?' · Player ID '+esc(o.pid):'')+' · '+D(o.date)+(o.method==="Crypto (Plisio)"?' · Crypto: '+esc(o.plisioStatus||"waiting")+(o.autoPaid?' (auto-approved)':''):'')+(o.promo?' · Promo '+esc(o.promo)+' (−$'+esc(o.discount||0)+')':'')+(o.hasProof?' · <b class="tag">Proof sent</b>':'')+'</small></div><div class="acts">'+(o.hasProof?'<button class="btn ghost sm" data-act="proof" data-id="'+esc(o.id)+'">Review</button> ':'')+'<select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
 }
 
 /* LICENSES */
@@ -246,10 +246,22 @@ function drawPay(note){
 }
 async function vSet(){
  const [s,ps,ns,sec]=await Promise.all([getDoc(doc(db,"settings","diamonds")),getDoc(doc(db,"settings","payment")),getDoc(doc(db,"settings","notify")),getDoc(doc(db,"secrets","wasms"))]);
- const d=Object.assign({usd495:2.41,min:495,step:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
+ const d=Object.assign({usd495:2.6,min:495,step:495,bulkAt:10000,bulkPct:10},s.exists()?s.data():{});
  const pd=ps.exists()?ps.data():{};PM=pd.methods||[];
- pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div><div class="panel" id="pp"></div><div class="panel" id="np"></div>';
- drawPay(pd.note||"");drawNotify(ns.exists()?ns.data():{},sec.exists()?sec.data():{});
+ pane.innerHTML='<div class="panel"><h2>Diamond pricing</h2><div class="grid2"><div><label for="s1">Price for 495 diamonds (USD)</label><input id="s1" type="number" step="0.01" value="'+esc(d.usd495)+'"></div><div><label for="s2">Minimum diamonds</label><input id="s2" type="number" value="'+esc(d.min)+'"></div><div><label for="s3">Counter step (+ / −)</label><input id="s3" type="number" value="'+esc(d.step)+'"></div><div><label for="s4">Bulk discount starts at</label><input id="s4" type="number" value="'+esc(d.bulkAt)+'"></div><div><label for="s5">Bulk discount %</label><input id="s5" type="number" value="'+esc(d.bulkPct)+'"></div></div><div class="msg" id="sm"></div><button class="btn" data-act="saves">Save settings</button></div><div class="panel" id="pp"></div><div class="panel" id="pl"></div><div class="panel" id="np"></div>';
+ drawPay(pd.note||"");drawPlisio(pd.plisio||{},ns.exists()?ns.data().workerUrl:"");drawNotify(ns.exists()?ns.data():{},sec.exists()?sec.data():{});
+}
+
+function drawPlisio(c,wurl){
+ const base=String(wurl||"https://YOUR-WORKER.pages.dev").replace(/\/+$/,"");
+ const urls=[["Status URL",base+"/plisio?json=true"],["Success URL",location.origin+"/success.html"],["Failed URL",location.origin+"/failed.html"]];
+ $("pl").innerHTML='<h2>Crypto payments (Plisio)</h2><p class="empty">Customers pay in crypto and their order is approved automatically, with keys sent on WhatsApp. Your secret key stays in Cloudflare (PLISIO_SECRET_KEY).</p>'
+ +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pl_on"'+(c.enabled?' checked':'')+'> Accept crypto payments at checkout</label>'
+ +'<div class="grid2"><div><label for="pl_exp">Invoice expires after (minutes)</label><input id="pl_exp" type="number" value="'+esc(c.expireMin||60)+'"></div><div><label for="pl_cur">Preselected crypto (optional)</label><input id="pl_cur" value="'+esc(c.currency||"")+'" placeholder="e.g. USDT_TRX or BTC"></div></div>'
+ +'<div class="msg" id="plm"></div><div class="inline"><button class="btn" data-act="savepl">Save</button><button class="btn ghost" data-act="testpl">Test connection</button></div>'
+ +'<h2 style="margin-top:22px;font-size:22px">Paste these into Plisio → API settings</h2>'
+ +urls.map(([n,u])=>'<div class="row"><div><b>'+n+'</b><small>'+esc(u)+'</small></div><button class="btn ghost sm" data-act="copyv" data-id="'+esc(u)+'">Copy</button></div>').join("")
+ +'<p class="empty" style="margin-top:12px">In Plisio, keep <b>Limit Access by IP address</b> empty, and turn on <b>Disable withdrawal via API</b>.</p>';
 }
 
 /* WHATSAPP + KEY ISSUING */
@@ -258,7 +270,7 @@ const normPh=s=>{let d=String(s||"").replace(/\D/g,"");if(d.startsWith("00"))d=d
 const UN={day:1,week:7,month:30,year:365};
 const daysOf=t=>{let n=0;String(t||"").replace(/(\d+)\s*(day|week|month|year)/gi,(m,a,u)=>{n+=+a*UN[u.toLowerCase()]});return n};
 const genKey=()=>"CHP-"+rnd(4)+"-"+rnd(4)+"-"+rnd(4);
-const WAERR={NO_KEY:"Add your WaSMS API key in Settings first.",UNAUTHORIZED:"WaSMS rejected the API key. Check it.",INSUFFICIENT_SCOPE:"The API key needs the messages:send permission (and accounts:read to find the account ID).",WHATSAPP_NOT_CONNECTED:"Your WhatsApp number isn’t connected in WaSMS.",WHATSAPP_DISCONNECTED:"Your WhatsApp number is disconnected in WaSMS.",NO_CONNECTED_ACCOUNT:"No connected WhatsApp number found in WaSMS.",PLAN_LIMIT:"Your WaSMS plan limit is used up.",RATE_LIMITED:"Too many requests. Try again in a minute.",NOT_ADMIN:"This account isn’t an admin.",BAD_TOKEN:"Please log in again.",NO_ENV_KEY:"The WASMS_KEY secret is missing in Cloudflare. Add it (type Secret, Production), then upload the zip again.",WELCOME_OFF:"The Welcome message isn’t switched on and saved. Tick Send automatically and tap Save.",NO_NUMBER:"That customer has no valid WhatsApp number.",MARK_FAILED:"Firestore blocked the update. Publish the latest firestore.rules."};
+const WAERR={NO_KEY:"Add your WaSMS API key in Settings first.",UNAUTHORIZED:"WaSMS rejected the API key. Check it.",INSUFFICIENT_SCOPE:"The API key needs the messages:send permission (and accounts:read to find the account ID).",WHATSAPP_NOT_CONNECTED:"Your WhatsApp number isn’t connected in WaSMS.",WHATSAPP_DISCONNECTED:"Your WhatsApp number is disconnected in WaSMS.",NO_CONNECTED_ACCOUNT:"No connected WhatsApp number found in WaSMS.",PLAN_LIMIT:"Your WaSMS plan limit is used up.",RATE_LIMITED:"Too many requests. Try again in a minute.",NO_PLISIO_KEY:"Add the PLISIO_SECRET_KEY secret in Cloudflare, then upload the zip again.",NOT_ADMIN:"This account isn’t an admin.",BAD_TOKEN:"Please log in again.",NO_ENV_KEY:"The WASMS_KEY secret is missing in Cloudflare. Add it (type Secret, Production), then upload the zip again.",WELCOME_OFF:"The Welcome message isn’t switched on and saved. Tick Send automatically and tap Save.",NO_NUMBER:"That customer has no valid WhatsApp number.",MARK_FAILED:"Firestore blocked the update. Publish the latest firestore.rules."};
 const WB="https://wasms.net/api/public/v1";
 async function callWA(payload){
  const n=await getDoc(doc(db,"settings","notify"));const url=n.exists()?(n.data().workerUrl||""):"";
@@ -315,6 +327,9 @@ const ACT={
  view:id=>run(()=>vView(id)),
  back:()=>go("users"),
  closem:()=>closeM(),
+ copyv:u=>{try{navigator.clipboard.writeText(u);if(cur)cur.textContent="Copied"}catch(e){}},
+ savepl:()=>run(async()=>{await setDoc(doc(db,"settings","payment"),{plisio:{enabled:$("pl_on").checked,expireMin:Math.max(10,Math.floor(+$("pl_exp").value)||60),currency:$("pl_cur").value.trim().toUpperCase()}},{merge:true});msg("plm","Saved.",true)}),
+ testpl:()=>run(async()=>{const r=await callWA({action:"plisio_test"});msg("plm",r.ok?"Connected to Plisio. Your secret key works.":r.why,r.ok)}),
  addpr:()=>formPromo(),
  editpr:id=>formPromo(PRM.find(x=>x.id===id)),
  togpr:id=>run(async()=>{const p=PRM.find(x=>x.id===id);await updateDoc(doc(db,"promos",id),{active:p.active===false});await vPromo()}),
@@ -329,7 +344,7 @@ const ACT={
  savewel:()=>run(async()=>{const c=$("wpc").value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"");await setDoc(doc(db,"settings","notify"),{welcomePromo:c},{merge:true});msg("wpm","Saved.",true)}),
  addpm:()=>{PM=readPM();PM.push({name:"",title:"",number:"",note:""});drawPay($("pnote2").value)},
  rmpm:i=>{PM=readPM();PM.splice(+i,1);drawPay($("pnote2").value)},
- savepay:()=>run(async()=>{const m=readPM().filter(x=>x.name&&x.number);await setDoc(doc(db,"settings","payment"),{methods:m,note:$("pnote2").value.trim()});PM=m;msg("pmg","Saved. Customers see these at checkout.",true)}),
+ savepay:()=>run(async()=>{const m=readPM().filter(x=>x.name&&x.number);await setDoc(doc(db,"settings","payment"),{methods:m,note:$("pnote2").value.trim()},{merge:true});PM=m;msg("pmg","Saved. Customers see these at checkout.",true)}),
  proof:id=>run(async()=>{
   const [o,pr]=await Promise.all([getDoc(doc(db,"orders",id)),getDoc(doc(db,"proofs",id))]);
   const d=o.data(),im=pr.exists()&&String(pr.data().image).startsWith("data:image/")?pr.data().image:"";
@@ -382,7 +397,7 @@ const ACT={
   const li=(ok,t)=>'<div class="row"><span>'+(ok?'✅':'❌')+' '+t+'</span></div>';
   let h='';
   if(!r.ok)h=li(false,'Worker: '+esc(r.why));
-  else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)')+li(r.sa==='ok','FIREBASE_SA for password reset: '+esc(r.sa||'unknown'));
+  else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)')+li(r.sa==='ok','Firebase service account (password reset and crypto delivery): '+esc(r.sa||'unknown'))+li(r.plisioKey,'PLISIO_SECRET_KEY secret in Cloudflare (needed for crypto payments)');
   h+=li(!!(T.welcome&&T.welcome.on),'Welcome message switched on and saved')+li(!!(T.received&&T.received.on),'Order received message switched on and saved')+li(!!(nd.alertAdmin&&nd.adminPhone),'New order alert has your number and is on');
   $("chk").innerHTML=h}),
  testwel:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number in the test box first.");const r=await callWA({action:"welcometest",to:n});msg("nm",r.ok?"Welcome test sent. Check WhatsApp.":r.why,r.ok)}),

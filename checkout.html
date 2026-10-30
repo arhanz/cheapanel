@@ -84,9 +84,11 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <div class="note" id="pnote" hidden></div>
 <div id="methods"></div>
 <div id="pidw" hidden><label for="pid">Free Fire player ID</label><input id="pid" inputmode="numeric"></div>
+<div id="manual">
 <label for="snd">Sender name or account number</label><input id="snd">
 <label for="txid">Transaction ID</label><input id="txid">
 <label for="shot">Payment screenshot</label><input id="shot" type="file" accept="image/*"><img id="pv" class="prevw" alt="Screenshot preview" hidden>
+</div>
 <div class="msg" id="msg" role="alert"></div>
 <button class="btn" id="sub" style="width:100%">Submit payment proof</button>
 </div></div></div>
@@ -101,7 +103,7 @@ const $=i=>document.getElementById(i);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=x=>{x=+x;return Number.isInteger(x)?String(x):x.toFixed(2)};
 const say=(t,ok)=>{$("msg").textContent=t;$("msg").className="msg"+(ok?" ok":"")};
-let CART=[],user=null,prof={},pay={methods:[]},sel=-1,img=null;
+let CART=[],user=null,prof={},pay={methods:[]},sel=-1,img=null,workerUrl="";
 try{CART=JSON.parse(localStorage.getItem("cp_cart")||"[]")}catch(e){}
 const save=()=>{try{localStorage.setItem("cp_cart",JSON.stringify(CART))}catch(e){}};
 const hasDia=()=>CART.some(i=>/diamond/i.test(i.n));
@@ -149,10 +151,28 @@ function drawItems(){
  if(!CART.length)show("empty");
 }
 function drawMethods(){
- const m=pay.methods||[];
- $("pnote").hidden=!pay.note;$("pnote").textContent=pay.note||"";
- $("methods").innerHTML=m.length?m.map((x,i)=>'<label class="pm'+(i===sel?' on':'')+'"><input type="radio" name="pm" value="'+i+'"'+(i===sel?' checked':'')+'><b>'+esc(x.name)+'</b><div class="det">'+(x.title?'Account title: <b>'+esc(x.title)+'</b><br>':'')+'Number: <b>'+esc(x.number)+'</b> <button type="button" class="btn ghost sm" data-copy="'+esc(x.number)+'">Copy</button>'+(x.note?'<br>'+esc(x.note):'')+'</div></label>').join(""):'<p class="empty">Payment details haven’t been set up yet. Please contact us on WhatsApp.</p>';
- document.querySelectorAll('input[name="pm"]').forEach(r=>r.onchange=()=>{sel=+r.value;drawMethods()});
+ const m=pay.methods||[],cr=!!(pay.plisio&&pay.plisio.enabled);
+ $("pnote").hidden=!pay.note||sel==="crypto";$("pnote").textContent=pay.note||"";
+ const cryptoCard=cr?'<label class="pm'+(sel==="crypto"?' on':'')+'"><input type="radio" name="pm" value="crypto"'+(sel==="crypto"?' checked':'')+'><b>Pay with crypto</b><div class="det">Bitcoin, USDT and more. Your order is approved automatically as soon as the payment is confirmed. No screenshot needed.</div></label>':'';
+ $("methods").innerHTML=cryptoCard+(m.length?m.map((x,i)=>'<label class="pm'+(i===sel?' on':'')+'"><input type="radio" name="pm" value="'+i+'"'+(i===sel?' checked':'')+'><b>'+esc(x.name)+'</b><div class="det">'+(x.title?'Account title: <b>'+esc(x.title)+'</b><br>':'')+'Number: <b>'+esc(x.number)+'</b> <button type="button" class="btn ghost sm" data-copy="'+esc(x.number)+'">Copy</button>'+(x.note?'<br>'+esc(x.note):'')+'</div></label>').join(""):(cr?'':'<p class="empty">Payment details haven’t been set up yet. Please contact us on WhatsApp.</p>'));
+ document.querySelectorAll('input[name="pm"]').forEach(r=>r.onchange=()=>{sel=r.value==="crypto"?"crypto":+r.value;drawMethods()});
+ $("manual").hidden=sel==="crypto";
+ $("sub").textContent=sel==="crypto"?"Pay with crypto":"Submit payment proof";
+}
+const CERR={PLISIO_OFF:"Crypto payments are switched off right now. Choose another method.",NO_PLISIO_KEY:"Crypto payments aren’t set up yet. Choose another method or contact support.",SVC_LOGIN_FAILED:"Crypto payments aren’t set up yet. Choose another method or contact support.",ORDER_NOT_FOUND:"We couldn’t find your order. Please try again.",ALREADY_PAID:"This order is already paid.",PRICE_ERROR:"An item in your cart is out of date. Remove it and add it again from the shop.",PROMO_INVALID:"Your promo code can’t be used for this order. Remove it and try again.",PLISIO_FAILED:"The payment provider couldn’t create the invoice.",NETWORK:"Network error. Try again."};
+async function payCrypto(){
+ const pid=$("pid").value.trim();
+ if(hasDia()&&!/^\d{6,12}$/.test(pid))return say("Enter a valid Free Fire player ID (digits only).");
+ if(!workerUrl)return say("Crypto payments aren’t available right now.");
+ $("sub").disabled=true;say("Creating your payment…",true);
+ try{
+  const oref=doc(collection(db,"orders")),now=Date.now();
+  await setDoc(oref,{uid:user.uid,email:user.email,item:CART.map(i=>i.n).join(", "),items:CART.map(i=>({n:i.n,p:i.p,x:i.x||""})),price:payable(),subtotal:+total().toFixed(2),discount:disc(),promo:promo?promo.code:"",pid:hasDia()?pid:"",method:"Crypto (Plisio)",status:"Pending payment",hasProof:false,date:now});
+  const tok=await auth.currentUser.getIdToken();
+  const r=await fetch(workerUrl,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify({action:"plisio_create",orderId:oref.id})}).then(x=>x.json()).catch(()=>({ok:false,error:"NETWORK"}));
+  if(!r.ok){$("sub").disabled=false;return say((CERR[r.error]||"Could not start the payment ("+(r.error||"error")+").")+(r.detail?" ("+r.detail+")":""))}
+  location.href=r.url;
+ }catch(x){$("sub").disabled=false;say("Could not start the payment. "+(x.code||x.message))}
 }
 function compress(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const sc=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);let q=.7,d=c.toDataURL("image/jpeg",q);while(d.length>700000&&q>.3){q-=.1;d=c.toDataURL("image/jpeg",q)}res(d)};im.onerror=()=>rej(new Error("bad"));im.src=u})}
 $("shot").onchange=async e=>{const f=e.target.files[0];img=null;$("pv").hidden=true;if(!f)return;
@@ -163,6 +183,7 @@ document.addEventListener("click",e=>{
  const c=e.target.dataset&&e.target.dataset.copy;if(c){try{navigator.clipboard.writeText(c);e.target.textContent="Copied"}catch(x){}}
 });
 $("sub").onclick=async()=>{
+ if(sel==="crypto")return payCrypto();
  const m=(pay.methods||[])[sel],pid=$("pid").value.trim(),snd=$("snd").value.trim(),tx=$("txid").value.trim();
  if(!m)return say("Choose how you paid.");
  if(hasDia()&&!/^\d{6,12}$/.test(pid))return say("Enter a valid Free Fire player ID (digits only).");
@@ -182,11 +203,11 @@ onAuthStateChanged(auth,async u=>{
  if(!u)return show("gate");
  if(!CART.length)return show("empty");
  try{
-  const [ps,py]=await Promise.all([getDoc(doc(db,"users",u.uid)),getDoc(doc(db,"settings","payment"))]);
-  prof=ps.exists()?ps.data():{};pay=py.exists()?py.data():{methods:[]};
+  const [ps,py,nt]=await Promise.all([getDoc(doc(db,"users",u.uid)),getDoc(doc(db,"settings","payment")),getDoc(doc(db,"settings","notify"))]);
+  prof=ps.exists()?ps.data():{};pay=py.exists()?py.data():{methods:[]};workerUrl=nt.exists()?(nt.data().workerUrl||""):"";
  }catch(x){}
  const d=CART.find(i=>i.pid);if(d)$("pid").value=d.pid;
- sel=(pay.methods||[]).length?0:-1;
+ sel=(pay.plisio&&pay.plisio.enabled&&workerUrl)?"crypto":((pay.methods||[]).length?0:-1);
  show("main");drawItems();drawMethods();
 });
 </script>
