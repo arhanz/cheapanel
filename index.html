@@ -111,6 +111,12 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 .hero{background:linear-gradient(180deg,#fff 0%,#fff3ee 100%)}
 .card,.dcard,.tile{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.devli{position:relative;color:var(--text);font-weight:700}
+.tip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1px solid var(--acc);background:transparent;color:var(--acc);font:700 13px/1 'Rajdhani',sans-serif;cursor:pointer;vertical-align:middle;padding:0;margin-left:4px}
+.tip:hover,.tip:focus{background:var(--acc);color:#000;outline:none}
+.tip span{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;background:#111;color:#fff;font:500 15px/1.4 'Rajdhani',sans-serif;text-align:left;padding:10px 12px;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip:hover span,.tip:focus span{display:block}
+.tip span b{color:#ffb08a;font-weight:700}
 </style>
 </head>
 <body>
@@ -204,12 +210,17 @@ var PRODUCTS = [
 ];
 var grid=document.getElementById("grid");
 function link(t){return "https://wa.me/"+WA+"?text="+encodeURIComponent(t)}
+function devLi(n){
+ var t=n===0?"One panel works on unlimited devices":"One panel works on "+n+" device"+(n>1?"s":"");
+ var tip=n===0?"You can use the same panel on as many of your devices as you like, for example your phone and a second phone or an emulator. One purchase covers all of them.":"Your panel comes with one license key. That key can be activated on up to "+n+" of your devices, for example your phone and a second phone or an emulator, so you don\u2019t have to buy a second panel. Each device you activate uses one of your "+n+" spots. Need more spots? Contact us on WhatsApp.";
+ return '<li class="devli">'+t+' <button type="button" class="tip" aria-label="What does devices mean?">i<span role="tooltip"><b>What are devices?</b><br>'+tip+'</span></button></li>';
+}
 function money(x){x=+x;return Number.isInteger(x)?String(x):x.toFixed(2)}
 function render(cat){
  grid.innerHTML="";
  PRODUCTS.filter(function(p){return cat==="all"||p.cat===cat}).forEach(function(p){
   var c=document.createElement("div");c.className="card";
-  var li=p.feats.map(function(f){return "<li>"+f+"</li>"}).join("");
+  var li=(p.dev!==undefined?devLi(p.dev):"")+p.feats.map(function(f){return "<li>"+f+"</li>"}).join("");
   var bn=p.bonus?'<span class="bonus">'+p.bonus+'</span>':'';
   var od=p.old?'<span class="old">$'+money(p.old)+'</span>':'';
   var sv=p.save?'<span class="save">'+p.save+'</span>':'';
@@ -277,7 +288,7 @@ try{
  if(!ps.empty){
   const list=ps.docs.map(x=>x.data()).filter(p=>p.active!==false).sort((a,b)=>(a.order||0)-(b.order||0));
   PRODUCTS.length=0;
-  list.forEach(p=>PRODUCTS.push({cat:p.cat,game:p.game,name:p.name,price:String(p.price),old:p.old?String(p.old):undefined,per:p.per||"",bonus:p.bonus||undefined,save:p.save||undefined,feats:[(function(d){return d===0?"One panel works on unlimited devices":"One panel works on "+d+" device"+(d>1?"s":"")})(p.maxDevices===undefined?2:+p.maxDevices)].concat(p.feats||[])}));
+  list.forEach(p=>PRODUCTS.push({cat:p.cat,game:p.game,name:p.name,price:String(p.price),old:p.old?String(p.old):undefined,per:p.per||"",bonus:p.bonus||undefined,save:p.save||undefined,dev:(p.maxDevices===undefined?2:+p.maxDevices),feats:p.feats||[]}));
   const t=document.querySelector('.tab[aria-selected="true"]');render(t?t.dataset.cat:"all");}
 }catch(e){console.warn("Using default catalog",e)}
 </script>
