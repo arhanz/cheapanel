@@ -277,7 +277,7 @@ try{
  if(!ps.empty){
   const list=ps.docs.map(x=>x.data()).filter(p=>p.active!==false).sort((a,b)=>(a.order||0)-(b.order||0));
   PRODUCTS.length=0;
-  list.forEach(p=>PRODUCTS.push({cat:p.cat,game:p.game,name:p.name,price:String(p.price),old:p.old?String(p.old):undefined,per:p.per||"",bonus:p.bonus||undefined,save:p.save||undefined,feats:p.feats||[]}));
+  list.forEach(p=>PRODUCTS.push({cat:p.cat,game:p.game,name:p.name,price:String(p.price),old:p.old?String(p.old):undefined,per:p.per||"",bonus:p.bonus||undefined,save:p.save||undefined,feats:[(function(d){return d===0?"One panel works on unlimited devices":"One panel works on "+d+" device"+(d>1?"s":"")})(p.maxDevices===undefined?2:+p.maxDevices)].concat(p.feats||[])}));
   const t=document.querySelector('.tab[aria-selected="true"]');render(t?t.dataset.cat:"all");}
 }catch(e){console.warn("Using default catalog",e)}
 </script>

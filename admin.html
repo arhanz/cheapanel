@@ -99,7 +99,7 @@ select.st{width:auto}
 <div class="msg" id="gm" role="alert"></div>
 <button class="btn" id="lb">Log in</button></div>
 <div id="app" hidden>
-<div class="tabsA" id="tabs"><button data-t="users" class="on">Users</button><button data-t="orders">Orders</button><button data-t="lic">Licenses</button><button data-t="prod">Products</button><button data-t="set">Settings</button></div>
+<div class="tabsA" id="tabs"><button data-t="users" class="on">Users</button><button data-t="orders">Orders</button><button data-t="lic">Licenses</button><button data-t="prod">Products</button><button data-t="promo">Promos</button><button data-t="set">Settings</button></div>
 <div id="pane"></div>
 </div>
 </main>
@@ -132,7 +132,7 @@ document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>go(b.dataset.
 function go(t){
  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
  pane.innerHTML='<p class="empty">Loading…</p>';
- run({users:vUsers,orders:vOrders,lic:vLic,prod:vProd,set:vSet}[t]);
+ run({users:vUsers,orders:vOrders,lic:vLic,prod:vProd,promo:vPromo,set:vSet}[t]);
 }
 
 /* USERS */
@@ -171,7 +171,7 @@ async function vOrders(){
  const s=await getDocs(collection(db,"orders"));
  const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date-a.date);
  const open=os.filter(o=>o.status==="Pending payment").length;
- pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+(o.pid?' · Player ID '+esc(o.pid):'')+' · '+D(o.date)+(o.hasProof?' · <b class="tag">Proof sent</b>':'')+'</small></div><div class="acts">'+(o.hasProof?'<button class="btn ghost sm" data-act="proof" data-id="'+esc(o.id)+'">Review</button> ':'')+'<select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
+ pane.innerHTML='<div class="stats"><div class="stat"><span>All orders</span><b>'+os.length+'</b></div><div class="stat"><span>Pending</span><b>'+open+'</b></div></div><div class="panel">'+(os.length?os.map(o=>'<div class="row"><div><b>'+esc(o.item)+'</b> <span class="tag">$'+esc(o.price)+'</span><small>'+esc(o.email)+(o.pid?' · Player ID '+esc(o.pid):'')+' · '+D(o.date)+(o.promo?' · Promo '+esc(o.promo)+' (−$'+esc(o.discount||0)+')':'')+(o.hasProof?' · <b class="tag">Proof sent</b>':'')+'</small></div><div class="acts">'+(o.hasProof?'<button class="btn ghost sm" data-act="proof" data-id="'+esc(o.id)+'">Review</button> ':'')+'<select class="st" data-act="st" data-id="'+esc(o.id)+'" aria-label="Status">'+STAT.map(x=>'<option'+(x===o.status?' selected':'')+'>'+x+'</option>').join("")+'</select></div></div>').join(""):'<p class="empty">No orders yet.</p>')+'</div>';
 }
 
 /* LICENSES */
@@ -204,6 +204,36 @@ function formP(p){
  openM('<h2>'+(p.id?'Edit plan':'Add plan')+'</h2><input type="hidden" id="pid" value="'+esc(p.id||"")+'"><div class="grid2"><div><label for="pgame">Game</label><select id="pgame"><option value="ff"'+(p.cat==="pubg"?'':' selected')+'>Free Fire</option><option value="pubg"'+(p.cat==="pubg"?' selected':'')+'>PUBG Mobile</option></select></div><div><label for="pname">Plan name</label><input id="pname" value="'+esc(p.name||"")+'" placeholder="Aimbot Panel – 1 Week"></div><div><label for="pprice">Original price (USD)</label><input id="pprice" type="number" step="0.01" value="'+esc(p.id?baseOf(p):"")+'"></div><div><label for="pdisc">Discount % (0 = none)</label><input id="pdisc" type="number" min="0" max="95" value="'+esc(p.id?discOf(p):0)+'"></div><div><label for="pper">Period label</label><input id="pper" value="'+esc(p.per||"")+'" placeholder="/ week"></div><div><label for="pbonus">Bonus badge</label><input id="pbonus" value="'+esc(p.bonus||"")+'" placeholder="+ 3 days free"></div><div><label for="porder">Sort order</label><input id="porder" type="number" value="'+esc(p.order||0)+'"></div><div><label for="pmax">Max devices (0 = unlimited)</label><input id="pmax" type="number" min="0" value="'+esc(p.maxDevices===undefined?MAX_DEVICES:p.maxDevices)+'"></div></div><div class="prev" id="pprev"></div><label for="pfeats">Features (one per line)</label><textarea id="pfeats">'+esc((p.feats||FE).join("\n"))+'</textarea><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pact"'+(p.active===false?'':' checked')+'> Show in shop</label><div class="msg" id="pm"></div><div class="inline"><button class="btn" data-act="savep">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
  const pv=()=>{const b=+$("pprice").value,d=+$("pdisc").value||0;$("pprev").textContent=b>0?(d>0?'Shop shows: $'+b+' crossed out, final $'+(+(b*(1-d/100)).toFixed(2))+' with a '+d+'% OFF badge':'Shop shows: $'+b):''};
  $("pprice").oninput=pv;$("pdisc").oninput=pv;pv();
+}
+
+/* PROMOS */
+let PRM=[];
+const dtl2=t=>t?new Date(t).toLocaleDateString():"–";
+const toLoc=t=>t?new Date(t-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):"";
+async function vPromo(){
+ const [s,ns]=await Promise.all([getDocs(collection(db,"promos")),getDoc(doc(db,"settings","notify"))]);
+ PRM=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));
+ const wp=ns.exists()?(ns.data().welcomePromo||""):"";
+ pane.innerHTML='<div class="ph"><h2>Promo codes ('+PRM.length+')</h2><button class="btn sm" data-act="addpr">+ Add promo code</button></div><div class="panel scroll">'
+ +(PRM.length?'<table class="tbl"><thead><tr><th>Code</th><th>Discount</th><th>Applies to</th><th>Who</th><th>Valid</th><th>Used</th><th>Status</th><th></th></tr></thead><tbody>'+PRM.map(p=>'<tr><td><code>'+esc(p.id)+'</code></td><td><b>'+(p.type==="fixed"?"$"+esc(p.value):esc(p.value)+"%")+'</b></td><td>'+esc(p.applies||"all")+'</td><td>'+(p.newOnly?"New customers":"Everyone")+(p.newDays?' ('+esc(p.newDays)+' days)':'')+'</td><td>'+dtl2(p.starts)+' → '+dtl2(p.ends)+'</td><td>'+esc(p.uses||0)+'/'+(p.maxUses?esc(p.maxUses):'∞')+'</td><td><button class="pill '+(p.active===false?'off':'on')+'" data-act="togpr" data-id="'+esc(p.id)+'">'+(p.active===false?'Off':'On')+'</button></td><td class="acts"><button class="btn ghost sm" data-act="editpr" data-id="'+esc(p.id)+'">Edit</button> <button class="btn ghost sm dng" data-act="delpr" data-id="'+esc(p.id)+'">Delete</button></td></tr>').join("")+'</tbody></table>':'<p class="empty">No promo codes yet.</p>')+'</div>'
+ +'<div class="panel"><h2>Welcome code for new customers</h2><p class="empty">Put {promo} in your Welcome message template (Settings) and this code is sent to every new customer.</p><label for="wpc">Promo code</label><input id="wpc" value="'+esc(wp)+'" placeholder="WELCOME10"><div class="msg" id="wpm"></div><button class="btn" data-act="savewel">Save</button></div>';
+}
+function formPromo(p){
+ p=p||{};
+ openM('<h2>'+(p.id?'Edit promo code':'Add promo code')+'</h2><div class="grid2">'
+ +'<div><label for="prc">Code</label><input id="prc" value="'+esc(p.id||"")+'"'+(p.id?' disabled':'')+' placeholder="WELCOME10"></div>'
+ +'<div><label for="prt">Type</label><select id="prt"><option value="percent"'+(p.type==="fixed"?'':' selected')+'>Percent off</option><option value="fixed"'+(p.type==="fixed"?' selected':'')+'>Fixed amount off (USD)</option></select></div>'
+ +'<div><label for="prv">Value</label><input id="prv" type="number" step="0.01" value="'+esc(p.value||"")+'"></div>'
+ +'<div><label for="pra">Applies to</label><select id="pra"><option value="all"'+(!p.applies||p.applies==="all"?' selected':'')+'>Everything</option><option value="panels"'+(p.applies==="panels"?' selected':'')+'>Panels only</option><option value="diamonds"'+(p.applies==="diamonds"?' selected':'')+'>Diamonds only</option></select></div>'
+ +'<div><label for="prm">Minimum order (USD)</label><input id="prm" type="number" step="0.01" value="'+esc(p.minOrder||0)+'"></div>'
+ +'<div><label for="prx">Max total uses (0 = unlimited)</label><input id="prx" type="number" value="'+esc(p.maxUses||0)+'"></div>'
+ +'<div><label for="pru">Uses per customer</label><input id="pru" type="number" min="1" value="'+esc(p.perUser||1)+'"></div>'
+ +'<div><label for="prd">Only accounts newer than (days, 0 = any)</label><input id="prd" type="number" value="'+esc(p.newDays||0)+'"></div>'
+ +'<div><label for="prs">Starts (optional)</label><input id="prs" type="datetime-local" value="'+toLoc(p.starts)+'"></div>'
+ +'<div><label for="pre">Ends (optional)</label><input id="pre" type="datetime-local" value="'+toLoc(p.ends)+'"></div></div>'
+ +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="prn"'+(p.newOnly?' checked':'')+'> New customers only (no paid orders yet)</label>'
+ +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="prac"'+(p.active===false?'':' checked')+'> Active</label>'
+ +'<div class="msg" id="prmsg"></div><div class="inline"><button class="btn" data-act="savepr" data-id="'+esc(p.id||"")+'">Save</button><button class="btn ghost" data-act="closem">Cancel</button></div>');
 }
 
 /* SETTINGS */
@@ -262,7 +292,7 @@ function drawNotify(nd,sd){
  +'<label for="nacc">WhatsApp account ID (optional)</label><input id="nacc" value="'+esc(sd.accountId||"")+'" placeholder="Empty = your first connected number">'
  +'<div style="margin-top:8px"><button class="btn ghost sm" data-act="findacc">Find my account ID</button></div><div id="acl"></div>'
  +'<label for="nurl">Worker URL (optional, empty = send directly)</label><input id="nurl" value="'+esc(nd.workerUrl||"")+'" placeholder="https://something.pages.dev">'
- +'<h2 style="margin-top:24px">Message templates</h2><p class="empty">You can use {name}, {order}, {amount} and {details}.</p>'
+ +'<h2 style="margin-top:24px">Message templates</h2><p class="empty">You can use {name}, {order}, {amount} and {details}. In the Welcome message you can also use {promo}.</p>'
  +TPL.map(([k,t,d,auto])=>'<div class="mrow"><b>'+t+'</b><p class="empty" style="margin:2px 0 8px">'+d+'</p>'+(auto?'<label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="ton_'+k+'"'+((T[k]||{}).on?' checked':'')+'> Send automatically</label>':'')+'<textarea id="ttx_'+k+'" style="min-height:110px">'+esc((T[k]||{}).text||(k==="approved"?(nd.template||DEFT[k]):DEFT[k]))+'</textarea></div>').join("")
  +'<div class="mrow"><b>New order alert for you</b><p class="empty" style="margin:2px 0 8px">Get a WhatsApp message when a customer sends a payment screenshot (needs the Worker and the WASMS_KEY secret).</p><label for="nadm">Your WhatsApp number</label><input id="nadm" value="'+esc(nd.adminPhone||"")+'" placeholder="923001234567"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nal"'+(nd.alertAdmin?' checked':'')+'> Alert me on new orders</label></div>'
  +'<div class="msg" id="nm"></div><button class="btn" data-act="savenotify">Save</button>'
@@ -285,6 +315,18 @@ const ACT={
  view:id=>run(()=>vView(id)),
  back:()=>go("users"),
  closem:()=>closeM(),
+ addpr:()=>formPromo(),
+ editpr:id=>formPromo(PRM.find(x=>x.id===id)),
+ togpr:id=>run(async()=>{const p=PRM.find(x=>x.id===id);await updateDoc(doc(db,"promos",id),{active:p.active===false});await vPromo()}),
+ delpr:id=>{if(!confirm("Delete this promo code?"))return;run(async()=>{await deleteDoc(doc(db,"promos",id));await vPromo()})},
+ savepr:id=>run(async()=>{
+  const code=(id||$("prc").value).trim().toUpperCase().replace(/[^A-Z0-9_-]/g,""),type=$("prt").value,value=+$("prv").value;
+  if(code.length<3)return msg("prmsg","Enter a code with at least 3 letters or numbers.");
+  if(!(value>0)||(type==="percent"&&value>100))return msg("prmsg","Enter a valid discount value.");
+  const old=PRM.find(x=>x.id===code)||{};
+  await setDoc(doc(db,"promos",code),{type,value,applies:$("pra").value,minOrder:+$("prm").value||0,maxUses:Math.floor(+$("prx").value)||0,perUser:Math.max(1,Math.floor(+$("pru").value)||1),newOnly:$("prn").checked,newDays:Math.floor(+$("prd").value)||0,starts:$("prs").value?new Date($("prs").value).getTime():0,ends:$("pre").value?new Date($("pre").value).getTime():0,active:$("prac").checked,uses:old.uses||0,created:old.created||Date.now()});
+  closeM();await vPromo()}),
+ savewel:()=>run(async()=>{const c=$("wpc").value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"");await setDoc(doc(db,"settings","notify"),{welcomePromo:c},{merge:true});msg("wpm","Saved.",true)}),
  addpm:()=>{PM=readPM();PM.push({name:"",title:"",number:"",note:""});drawPay($("pnote2").value)},
  rmpm:i=>{PM=readPM();PM.splice(+i,1);drawPay($("pnote2").value)},
  savepay:()=>run(async()=>{const m=readPM().filter(x=>x.name&&x.number);await setDoc(doc(db,"settings","payment"),{methods:m,note:$("pnote2").value.trim()});PM=m;msg("pmg","Saved. Customers see these at checkout.",true)}),
@@ -310,6 +352,7 @@ const ACT={
    }
    await updateDoc(doc(db,"orders",id),{status:"Paid",keys,keysIssued:true});
   }else if(d.status!=="Paid"){await updateDoc(doc(db,"orders",id),{status:"Paid"})}
+  if(d.promo&&!d.promoCounted){const pr=doc(db,"promos",d.promo),ps=await getDoc(pr);if(ps.exists())await updateDoc(pr,{uses:(ps.data().uses||0)+1});await updateDoc(doc(db,"orders",id),{promoCounted:true})}
   keys.forEach(k=>lines.push("🔑 "+k.plan+"\nKey: "+k.key+(k.days?"\nValid for "+k.days+" days":"")));
   items.filter(it=>/diamond/i.test(it.n)).forEach(it=>lines.push("💎 "+it.n+": we are topping up Player ID "+d.pid+" now."));
   const ns=await getDoc(doc(db,"settings","notify")),nd=ns.exists()?ns.data():{},tpl=((nd.templates||{}).approved||{}).text||nd.template||DEFTPL;
@@ -339,7 +382,7 @@ const ACT={
   const li=(ok,t)=>'<div class="row"><span>'+(ok?'✅':'❌')+' '+t+'</span></div>';
   let h='';
   if(!r.ok)h=li(false,'Worker: '+esc(r.why));
-  else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)');
+  else h=li(true,'Worker is reachable')+li(r.savedKey,'WaSMS key saved in Settings')+li(r.envKey,'WASMS_KEY secret added in Cloudflare (needed for welcome, order received and your alerts)')+li(r.sa==='ok','FIREBASE_SA for password reset: '+esc(r.sa||'unknown'));
   h+=li(!!(T.welcome&&T.welcome.on),'Welcome message switched on and saved')+li(!!(T.received&&T.received.on),'Order received message switched on and saved')+li(!!(nd.alertAdmin&&nd.adminPhone),'New order alert has your number and is on');
   $("chk").innerHTML=h}),
  testwel:()=>run(async()=>{const n=normPh($("ntest").value);if(n.length<8)return msg("nm","Enter a number in the test box first.");const r=await callWA({action:"welcometest",to:n});msg("nm",r.ok?"Welcome test sent. Check WhatsApp.":r.why,r.ok)}),

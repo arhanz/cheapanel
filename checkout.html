@@ -75,7 +75,11 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <div id="main" hidden>
 <h1 style="font-size:clamp(34px,6vw,52px);margin-top:30px">Checkout</h1>
 <div class="co">
-<div class="panel"><h2>Your order</h2><div id="items"></div><div class="row"><b>Total</b><span class="big" id="total"></span></div></div>
+<div class="panel"><h2>Your order</h2><div id="items"></div><div class="row"><span>Promo code</span><div class="inline" style="flex:1;max-width:260px"><input id="pcode" placeholder="Enter code" autocomplete="off" aria-label="Promo code"><button class="btn ghost" id="papply" type="button">Apply</button></div></div>
+<div class="msg" id="pmsg" role="alert" style="min-height:0"></div>
+<div class="row" id="subrow" hidden><span>Subtotal</span><span id="subt"></span></div>
+<div class="row" id="disrow" hidden><span>Discount (<b id="dcode"></b>)</span><b id="dval"></b></div>
+<div class="row"><b>Total</b><span class="big" id="total"></span></div></div>
 <div class="panel"><h2>Pay and send proof</h2>
 <div class="note" id="pnote" hidden></div>
 <div id="methods"></div>
@@ -90,7 +94,7 @@ code{background:#eee;padding:2px 8px;border-radius:4px;color:var(--acc2)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,getDocs,query,where} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const cfg={apiKey:"AIzaSyAYeAtMYejinyUq8qsC0SZqrWI9Ah_x32o",authDomain:"cheapanel-01.firebaseapp.com",projectId:"cheapanel-01",storageBucket:"cheapanel-01.firebasestorage.app",messagingSenderId:"104612795141",appId:"1:104612795141:web:4915fba56f9880695f1d6c"};
 const db=getFirestore(initializeApp(cfg)),auth=getAuth();
 const $=i=>document.getElementById(i);
@@ -110,9 +114,37 @@ async function ping(body){
  }catch(e){}
 }
 function show(id){$("boot").hidden=true;["gate","empty","done","main"].forEach(x=>$(x).hidden=x!==id)}
+let promo=null;
+const pm=(t,ok)=>{$("pmsg").textContent=t;$("pmsg").className="msg"+(ok?" ok":"")};
+const eligibleSum=ap=>CART.filter(i=>ap==="panels"?!/diamond/i.test(i.n):ap==="diamonds"?/diamond/i.test(i.n):true).reduce((a,i)=>a+(+i.p||0),0);
+const disc=()=>{if(!promo)return 0;const e=eligibleSum(promo.applies);const d=promo.type==="fixed"?+promo.value:e*(+promo.value)/100;return +Math.min(d,e).toFixed(2)};
+const payable=()=>+(total()-disc()).toFixed(2);
+async function applyPromo(){
+ const code=$("pcode").value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"");
+ if(!code)return pm("Enter a promo code.");
+ pm("Checking…",true);
+ try{
+  const s=await getDoc(doc(db,"promos",code));
+  if(!s.exists())return pm("That code isn’t valid.");
+  const p=s.data(),now=Date.now();
+  if(p.active===false)return pm("This code is no longer active.");
+  if(p.starts&&now<p.starts)return pm("This code isn’t active yet.");
+  if(p.ends&&now>p.ends)return pm("This code has expired.");
+  if(p.maxUses&&(p.uses||0)>=p.maxUses)return pm("This code has been fully used.");
+  const os=await getDocs(query(collection(db,"orders"),where("uid","==",user.uid))),mine=os.docs.map(d=>d.data());
+  if(mine.filter(o=>o.promo===code&&o.status!=="Rejected"&&o.status!=="Cancelled").length>=(p.perUser||1))return pm("You have already used this code.");
+  if(p.newOnly&&mine.some(o=>o.status==="Paid"||o.status==="Delivered"))return pm("This code is for new customers only.");
+  if(p.newDays&&prof.joined&&now-prof.joined>p.newDays*864e5)return pm("This code is only for accounts created in the last "+p.newDays+" days.");
+  if(eligibleSum(p.applies)<=0)return pm("This code doesn’t apply to the items in your cart.");
+  if(p.minOrder&&total()<p.minOrder)return pm("The minimum order for this code is $"+money(p.minOrder)+".");
+  promo={code,...p};drawItems();pm("Code applied!",true);
+ }catch(x){pm("Could not check the code. Try again.")}
+}
 function drawItems(){
  $("items").innerHTML=CART.map((i,k)=>'<div class="row"><div><b>'+esc(i.n)+'</b><small>'+esc(i.x)+'</small></div><div>$'+money(i.p)+' <button class="btn ghost sm" data-k="'+k+'" aria-label="Remove item">Remove</button></div></div>').join("");
- $("total").textContent="$"+money(total());
+ if(promo&&eligibleSum(promo.applies)<=0){promo=null;pm("")}
+ $("subrow").hidden=$("disrow").hidden=!promo;$("subt").textContent="$"+money(total());$("dcode").textContent=promo?promo.code:"";$("dval").textContent="−$"+money(disc());
+ $("total").textContent="$"+money(payable());
  $("pidw").hidden=!hasDia();
  if(!CART.length)show("empty");
 }
@@ -140,10 +172,11 @@ $("sub").onclick=async()=>{
  try{
   const oref=doc(collection(db,"orders")),now=Date.now();
   await setDoc(doc(db,"proofs",oref.id),{uid:user.uid,image:img,date:now});
-  await setDoc(oref,{uid:user.uid,email:user.email,item:CART.map(i=>i.n).join(", "),items:CART.map(i=>({n:i.n,p:i.p,x:i.x||""})),price:+total().toFixed(2),pid:hasDia()?pid:"",method:m.name,sender:snd,txid:tx,status:"Pending payment",hasProof:true,date:now});
+  await setDoc(oref,{uid:user.uid,email:user.email,item:CART.map(i=>i.n).join(", "),items:CART.map(i=>({n:i.n,p:i.p,x:i.x||""})),price:payable(),subtotal:+total().toFixed(2),discount:disc(),promo:promo?promo.code:"",pid:hasDia()?pid:"",method:m.name,sender:snd,txid:tx,status:"Pending payment",hasProof:true,date:now});
   ping({action:"neworder",orderId:oref.id});CART=[];save();show("done");
  }catch(x){$("sub").disabled=false;say("Could not send. "+(x.code||x.message))}
 };
+$("papply").onclick=applyPromo;
 onAuthStateChanged(auth,async u=>{
  user=u;
  if(!u)return show("gate");
